@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Medicine Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+/* ════════════════════════════════════════════════════
+   MEDICINE SCANNER — PAGE STYLES
+   ════════════════════════════════════════════════════ */
+.scanner-wrap { padding:2rem 2rem 3rem; max-width:1100px; display:flex; flex-direction:column; gap:2rem; }
+
+/* ── Page header ─────────────────────────────────── */
+.page-header h1 { font-family:'Syne',sans-serif; font-size:1.9rem; font-weight:800; letter-spacing:-.03em; line-height:1.2; }
+.page-header p  { font-size:var(--text-base); color:var(--muted); margin-top:.5rem; line-height:1.65; max-width:620px; }
+
+/* ── Mode tabs ───────────────────────────────────── */
+.mode-tabs { display:flex; gap:.6rem; background:rgba(255,255,255,.05); border:1.5px solid var(--border); border-radius:var(--radius-md); padding:.35rem; width:fit-content; }
+.mode-tab {
+  padding:.55rem 1.25rem; border-radius:var(--radius-sm);
+  font-size:var(--text-sm); font-weight:600; cursor:pointer;
+  color:rgba(255,255,255,.45); transition:all .2s; border:none; background:transparent;
+  display:flex; align-items:center; gap:.45rem;
+}
+.mode-tab.active { background:var(--card); color:#fff; box-shadow:0 2px 12px rgba(0,0,0,.25); border:1px solid var(--border); }
+
+/* ── Scanner layout ──────────────────────────────── */
+.scanner-layout { display:grid; grid-template-columns:1fr 1fr; gap:1.6rem; align-items:start; }
+
+/* ── Camera / Upload card ────────────────────────── */
+.capture-card {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-xl); overflow:hidden;
+  display:flex; flex-direction:column;
+}
+
+/* Camera viewfinder */
+.viewfinder {
+  position:relative; background:#000; overflow:hidden;
+  aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;
+}
+#camera-video  { width:100%; height:100%; object-fit:cover; display:none; }
+#capture-canvas{ display:none; }
+.vf-overlay {
+  position:absolute; inset:0; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+}
+/* Scanning frame corners */
+.vf-frame {
+  width:65%; aspect-ratio:1;
+  position:relative;
+}
+.vf-frame::before,
+.vf-frame::after,
+.vf-corner-bl,
+.vf-corner-br {
+  content:''; position:absolute; width:22px; height:22px;
+  border-color:var(--teal-light); border-style:solid;
+}
+.vf-frame::before  { top:0;    left:0;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.vf-frame::after   { top:0;    right:0; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+.vf-corner-bl { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+.vf-corner-br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+/* Scanning animation line */
+.scan-line {
+  position:absolute; left:17.5%; right:17.5%; height:2px;
+  background:linear-gradient(90deg, transparent, var(--teal-light), transparent);
+  box-shadow:0 0 8px var(--teal);
+  animation:scan-sweep 2.4s ease-in-out infinite;
+  opacity:0; top:17.5%;
+}
+@keyframes scan-sweep {
+  0%   { transform:translateY(0);     opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { transform:translateY(calc(65vw * .6)); opacity:0; }
+}
+.scan-line.active { opacity:1; }
+
+/* Camera idle state */
+.vf-idle {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1rem;
+  background:rgba(0,0,0,.75);
+}
+.vf-idle-icon { font-size:3.5rem; opacity:.5; }
+.vf-idle p { font-size:var(--text-sm); color:rgba(255,255,255,.45); text-align:center; max-width:200px; line-height:1.55; }
+
+/* Captured preview */
+#preview-img { width:100%; height:100%; object-fit:cover; display:none; }
+.preview-badge {
+  position:absolute; top:.75rem; right:.75rem;
+  background:rgba(0,212,160,.2); border:1.5px solid rgba(0,212,160,.4);
+  color:var(--success); font-size:var(--text-xs); font-weight:700; padding:.3rem .7rem;
+  border-radius:99px; display:none;
+}
+
+/* Camera controls */
+.cam-controls {
+  display:flex; gap:.65rem; padding:1.1rem 1.2rem; flex-wrap:wrap;
+  border-top:1px solid var(--border);
+}
+
+/* ── Upload zone (when tab = upload) ────────────── */
+.upload-zone {
+  aspect-ratio:4/3;
+  border:2px dashed rgba(255,255,255,.14);
+  border-radius:var(--radius-lg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1rem; cursor:pointer; transition:all .2s;
+  padding:2rem; text-align:center;
+  background:rgba(255,255,255,.02);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color:var(--teal); background:rgba(0,180,166,.06);
+}
+.upload-zone-icon { font-size:3.2rem; opacity:.45; }
+.upload-zone h3   { font-family:'Syne',sans-serif; font-size:var(--text-md); font-weight:700; }
+.upload-zone p    { font-size:var(--text-sm); color:var(--muted); line-height:1.55; }
+#file-input { display:none; }
+
+/* ── Text search mode ────────────────────────────── */
+.search-mode { display:flex; flex-direction:column; gap:1rem; padding:1.5rem; }
+.search-input-wrap { position:relative; }
+.search-input-wrap input {
+  width:100%; padding:1rem 3.5rem 1rem 1.2rem;
+  background:rgba(255,255,255,.07); border:1.5px solid var(--border);
+  border-radius:var(--radius-sm); color:#fff; font-size:var(--text-md);
+  outline:none; font-family:'DM Sans',sans-serif;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search-input-wrap input:focus {
+  border-color:var(--teal); box-shadow:0 0 0 4px rgba(0,180,166,.12);
+}
+.search-input-wrap input::placeholder { color:rgba(255,255,255,.25); }
+.search-go-btn {
+  position:absolute; right:.6rem; top:50%; transform:translateY(-50%);
+  width:38px; height:38px; border-radius:9px;
+  background:linear-gradient(135deg,var(--teal),var(--sky));
+  border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:1.1rem; color:var(--ink); transition:all .18s;
+}
+.search-go-btn:hover { transform:translateY(-50%) scale(1.06); }
+
+.quick-searches { display:flex; flex-wrap:wrap; gap:.5rem; }
+.quick-search-pill {
+  padding:.35rem .85rem; border-radius:99px;
+  background:rgba(255,255,255,.06); border:1px solid var(--border);
+  font-size:var(--text-xs); color:rgba(255,255,255,.6);
+  cursor:pointer; transition:all .18s;
+}
+.quick-search-pill:hover { background:rgba(0,180,166,.1); border-color:var(--border-t); color:var(--teal-light); }
+
+/* ── Result panel ────────────────────────────────── */
+.result-panel { display:flex; flex-direction:column; gap:1.3rem; }
+
+/* Auth score card */
+.auth-card {
+  border-radius:var(--radius-lg); padding:1.6rem;
+  display:flex; align-items:center; gap:1.3rem;
+  border:1.5px solid;
+}
+.auth-card.authentic  { background:rgba(0,212,160,.08);  border-color:rgba(0,212,160,.25);  }
+.auth-card.caution    { background:rgba(255,170,68,.08);  border-color:rgba(255,170,68,.25);  }
+.auth-card.suspect    { background:rgba(255,92,122,.1);   border-color:rgba(255,92,122,.3);   }
+.auth-card.unknown    { background:rgba(100,130,154,.08); border-color:rgba(100,130,154,.22); }
+
+.auth-icon { font-size:3rem; flex-shrink:0; }
+.auth-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; line-height:1.2; }
+.auth-sub   { font-size:var(--text-sm); margin-top:.3rem; opacity:.8; line-height:1.5; }
+.auth-score { margin-left:auto; text-align:center; flex-shrink:0; }
+.auth-pct   { font-family:'Syne',sans-serif; font-size:2.2rem; font-weight:800; line-height:1; }
+.auth-pct-lbl { font-size:var(--text-xs); opacity:.65; margin-top:.2rem; }
+
+/* Info sections */
+.info-section {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-lg); overflow:hidden;
+}
+.info-section-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1rem 1.3rem; border-bottom:1px solid var(--border);
+  cursor:pointer; user-select:none;
+}
+.info-section-title { font-family:'Syne',sans-serif; font-size:var(--text-sm); font-weight:700; display:flex; align-items:center; gap:.6rem; }
+.info-section-arrow { font-size:.8rem; color:var(--muted); transition:transform .2s; }
+.info-section-head.open .info-section-arrow { transform:rotate(180deg); }
+.info-section-body  { padding:1.2rem 1.3rem; display:none; }
+.info-section-body.open { display:block; }
+
+/* Drug info rows */
+.drug-row { display:flex; gap:.9rem; padding:.65rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.drug-row:last-child { border-bottom:none; }
+.drug-row-label { font-size:var(--text-xs); font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); width:130px; flex-shrink:0; padding-top:.12rem; }
+.drug-row-val   { font-size:var(--text-sm); line-height:1.65; color:rgba(255,255,255,.85); flex:1; }
+
+/* Interaction list */
+.interaction-item {
+  display:flex; align-items:flex-start; gap:.9rem;
+  padding:.8rem 0; border-bottom:1px solid rgba(255,255,255,.05);
+}
+.interaction-item:last-child { border-bottom:none; }
+.int-sev  { padding:.2rem .6rem; border-radius:99px; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; flex-shrink:0; margin-top:.08rem; }
+.int-sev.severe   { background:rgba(255,92,122,.15); color:var(--error); }
+.int-sev.moderate { background:rgba(255,170,68,.14); color:var(--warn); }
+.int-sev.minor    { background:rgba(0,212,160,.12);  color:var(--success); }
+.int-body h4 { font-size:var(--text-sm); font-weight:600; margin-bottom:.22rem; }
+.int-body p  { font-size:var(--text-sm); color:var(--muted); line-height:1.6; }
+
+/* Counterfeit flags */
+.flag-list { display:flex; flex-direction:column; gap:.7rem; }
+.flag-item { display:flex; gap:.85rem; padding:.85rem 1rem; border-radius:var(--radius-sm); background:rgba(255,255,255,.04); border:1px solid var(--border); }
+.flag-ico  { font-size:1.2rem; flex-shrink:0; }
+.flag-body h4 { font-size:var(--text-sm); font-weight:600; margin-bottom:.2rem; }
+.flag-body p  { font-size:var(--text-sm); color:var(--muted); line-height:1.55; }
+
+/* Action buttons */
+.result-actions { display:flex; gap:.75rem; flex-wrap:wrap; }
+
+/* ── Loading state ───────────────────────────────── */
+.scan-loading {
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  gap:1.2rem; padding:3rem; text-align:center;
+}
+.scan-loading.active { display:flex; }
+.scan-spinner {
+  width:52px; height:52px; border-radius:50%;
+  border:3px solid rgba(0,180,166,.15);
+  border-top-color:var(--teal);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.scan-loading p { font-size:var(--text-base); color:var(--muted); line-height:1.6; }
+
+/* ── Scan history ────────────────────────────────── */
+.scan-history { display:flex; flex-direction:column; gap:.7rem; }
+.sh-item {
+  display:flex; align-items:center; gap:1rem;
+  padding:.9rem 1.1rem; border-radius:var(--radius-md);
+  background:var(--card); border:1.5px solid var(--border);
+  cursor:pointer; transition:all .2s;
+}
+.sh-item:hover { border-color:rgba(0,180,166,.22); transform:translateX(3px); }
+.sh-img  { width:44px; height:44px; border-radius:10px; object-fit:cover; background:rgba(255,255,255,.07); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem; }
+.sh-info { flex:1; min-width:0; }
+.sh-name { font-size:var(--text-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sh-meta { font-size:var(--text-xs); color:var(--muted); margin-top:.15rem; }
+.sh-badge { padding:.2rem .6rem; border-radius:99px; font-size:.65rem; font-weight:700; text-transform:uppercase; }
+
+/* ── Disclaimer ──────────────────────────────────── */
+.disclaimer {
+  background:rgba(255,170,68,.07); border:1.5px solid rgba(255,170,68,.2);
+  border-radius:var(--radius-md); padding:1rem 1.3rem;
+  display:flex; gap:.85rem; align-items:flex-start;
+  font-size:var(--text-sm); color:rgba(255,255,255,.72); line-height:1.65;
+}
+.disclaimer-ico { font-size:1.25rem; flex-shrink:0; margin-top:.05rem; }
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════ */
+@media(max-width:900px) {
+  .scanner-layout { grid-template-columns:1fr; }
+}
+@media(max-width:768px) {
+  .scanner-wrap { padding:1.2rem 1rem 2.5rem; gap:1.5rem; }
+  .mode-tabs    { width:100%; justify-content:stretch; }
+  .mode-tab     { flex:1; justify-content:center; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay"></div>
+
+<div class="shell">
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="index.html" class="logo">Zed</a>
+      <span class="logo-badge">Pro</span>
+    </div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av" id="sb-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub" id="sb-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+                <a href="medicine-scanner.html"   class="nav-item active"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Find Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button>
+      <button onclick="ZedAuth.signOut()" style="width:100%;margin-top:.6rem;padding:.68rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:rgba(255,255,255,.4);font-size:var(--text-xs);cursor:pointer;transition:color .18s" onmouseover="this.style.color='rgba(255,255,255,.8)'" onmouseout="this.style.color='rgba(255,255,255,.4)'">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.9rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div>
+
+        </div>
+      </div>
+      <div class="topbar-right">
+        <a href="chat.html" class="btn btn-primary btn-sm">🤖 Ask AI</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="scanner-wrap">
+
+        <!-- ── PAGE HEADER ──────────────────────── -->
+        <div class="page-header anim-1">
+          <h1>Medicine Scanner</h1>
+          <p>Scan or photograph a medicine label, tablet, or packaging to identify the drug, verify authenticity, check dosage guidelines and flag potential interactions with your current medications.</p>
+        </div>
+
+        <!-- ── DISCLAIMER ─────────────────────── -->
+        <div class="disclaimer anim-1">
+          <span class="disclaimer-ico">⚠️</span>
+          <span>This tool assists identification only and is <strong>not a substitute</strong> for professional pharmaceutical advice. Always verify medicines with a licensed pharmacist. If you suspect counterfeit drugs, report to your national medicines authority.</span>
+        </div>
+
+        <!-- ── MODE TABS ──────────────────────── -->
+        <div class="anim-2">
+          <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-camera" onclick="setMode('camera')">📷 Camera Scan</button>
+            <button class="mode-tab"        id="tab-upload" onclick="setMode('upload')">🖼 Upload Image</button>
+            <button class="mode-tab"        id="tab-text"   onclick="setMode('text')">🔍 Search by Name</button>
+          </div>
+        </div>
+
+        <!-- ── MAIN SCANNER LAYOUT ────────────── -->
+        <div class="scanner-layout anim-3">
+
+          <!-- LEFT — capture panel -->
+          <div class="capture-card" id="capture-card">
+
+            <!-- CAMERA MODE -->
+            <div id="mode-camera">
+              <div class="viewfinder" id="viewfinder">
+                <video id="camera-video" autoplay playsinline muted></video>
+                <canvas id="capture-canvas"></canvas>
+                <img id="preview-img" alt="Captured medicine"/>
+                <span class="preview-badge" id="preview-badge">✓ Captured</span>
+
+                <!-- Scanning frame overlay -->
+                <div class="vf-overlay" id="vf-overlay">
+                  <div class="vf-frame">
+                    <span class="vf-corner-bl"></span>
+                    <span class="vf-corner-br"></span>
+                  </div>
+                  <div class="scan-line" id="scan-line"></div>
+                </div>
+
+                <!-- Idle state -->
+                <div class="vf-idle" id="vf-idle">
+                  <div class="vf-idle-icon">📷</div>
+                  <p>Camera not active. Press <strong>Start Camera</strong> below, then point at the medicine label.</p>
+                </div>
+              </div>
+              <div class="cam-controls">
+                <button class="btn btn-ghost" id="cam-start-btn" onclick="startCamera()">▶ Start Camera</button>
+                <button class="btn btn-primary" id="cam-capture-btn" onclick="capturePhoto()" style="display:none">⊙ Capture</button>
+                <button class="btn btn-ghost"   id="cam-retake-btn"  onclick="retakePhoto()"  style="display:none">↺ Retake</button>
+                <button class="btn btn-teal"    id="cam-scan-btn"    onclick="scanCaptured()" style="display:none">🔍 Scan Medicine</button>
+                <button class="btn btn-danger btn-sm" id="cam-stop-btn" onclick="stopCamera()" style="display:none">✕ Stop</button>
+              </div>
+            </div>
+
+            <!-- UPLOAD MODE -->
+            <div id="mode-upload" style="display:none; padding:1.4rem;">
+              <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+                   ondragover="event.preventDefault();this.classList.add('drag-over')"
+                   ondragleave="this.classList.remove('drag-over')"
+                   ondrop="handleDrop(event)">
+                <div class="upload-zone-icon">🖼</div>
+                <h3>Drop image here</h3>
+                <p>Or click to browse. Supports JPG, PNG, WEBP.<br>Works with tablet photos, packaging, blister packs.</p>
+                <button class="btn btn-primary" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choose File</button>
+              </div>
+              <input type="file" id="file-input" accept="image/*" onchange="handleFileSelect(event)"/>
+              <div id="upload-preview" style="display:none;margin-top:1rem">
+                <img id="upload-preview-img" style="width:100%;border-radius:var(--radius-md);border:1.5px solid var(--border);max-height:280px;object-fit:contain;background:#000" alt=""/>
+                <div style="display:flex;gap:.7rem;margin-top:.85rem">
+                  <button class="btn btn-ghost btn-sm" onclick="clearUpload()">✕ Clear</button>
+                  <button class="btn btn-primary" onclick="scanUploadedImage()">🔍 Scan Medicine</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TEXT SEARCH MODE -->
+            <div id="mode-text" style="display:none">
+              <div class="search-mode">
+                <div style="font-family:'Syne',sans-serif;font-size:var(--text-sm);font-weight:700;margin-bottom:.2rem">Search by Drug Name or Code</div>
+                <div class="search-input-wrap">
+                  <input type="text" id="drug-search-input" placeholder="e.g. Paracetamol 500mg, Amoxicillin, Ibuprofen…"
+                         onkeydown="if(event.key==='Enter')searchByName()"
+                         autocomplete="off" spellcheck="false"/>
+                  <button class="search-go-btn" onclick="searchByName()">→</button>
+                </div>
+                <div>
+                  <div style="font-size:var(--text-xs);color:var(--muted);margin-bottom:.5rem">Common searches:</div>
+                  <div class="quick-searches">
+                    <span class="quick-search-pill" onclick="quickSearch('Paracetamol 500mg')">Paracetamol 500mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Amoxicillin 250mg')">Amoxicillin 250mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Metformin 500mg')">Metformin 500mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Omeprazole 20mg')">Omeprazole 20mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Lisinopril 10mg')">Lisinopril 10mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Atorvastatin 40mg')">Atorvastatin 40mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Cetirizine 10mg')">Cetirizine 10mg</span>
+                    <span class="quick-search-pill" onclick="quickSearch('Vitamin D3 1000IU')">Vitamin D3 1000IU</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT — results panel -->
+          <div class="result-panel" id="result-panel">
+
+            <!-- Initial empty state -->
+            <div id="result-empty" style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-xl);padding:3rem 2rem;text-align:center">
+              <div style="font-size:3.5rem;margin-bottom:1rem;opacity:.4">💊</div>
+              <div style="font-family:'Syne',sans-serif;font-size:var(--text-md);font-weight:700;margin-bottom:.6rem">Ready to Scan</div>
+              <p style="font-size:var(--text-sm);color:var(--muted);line-height:1.7;max-width:260px;margin:0 auto">Start the camera, upload a photo, or type a drug name to begin identification and authenticity check.</p>
+              <div style="display:flex;flex-direction:column;gap:.6rem;margin-top:1.5rem;text-align:left;padding:1rem;background:rgba(255,255,255,.04);border-radius:var(--radius-md)">
+                <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.2rem">What Zed checks:</div>
+                <div style="font-size:var(--text-sm);display:flex;gap:.6rem;align-items:center"><span>✅</span>Drug identification &amp; generic names</div>
+                <div style="font-size:var(--text-sm);display:flex;gap:.6rem;align-items:center"><span>🛡️</span>Authenticity indicators &amp; counterfeit flags</div>
+                <div style="font-size:var(--text-sm);display:flex;gap:.6rem;align-items:center"><span>💊</span>Dosage, indications &amp; contraindications</div>
+                <div style="font-size:var(--text-sm);display:flex;gap:.6rem;align-items:center"><span>⚠️</span>Drug interactions with your medications</div>
+                <div style="font-size:var(--text-sm);display:flex;gap:.6rem;align-items:center"><span>🌍</span>Regulatory approval status</div>
+              </div>
+            </div>
+
+            <!-- Loading state -->
+            <div class="scan-loading" id="result-loading">
+              <div class="scan-spinner"></div>
+              <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:var(--text-md)" id="loading-title">Analysing Medicine…</div>
+              <p id="loading-sub">Identifying drug components and checking authenticity indicators.</p>
+            </div>
+
+            <!-- Results (hidden until populated) -->
+            <div id="result-content" style="display:none">
+
+              <!-- Authenticity verdict -->
+              <div class="auth-card" id="auth-card">
+                <div class="auth-icon" id="auth-icon">💊</div>
+                <div style="flex:1;min-width:0">
+                  <div class="auth-title" id="auth-title">Loading…</div>
+                  <div class="auth-sub"   id="auth-sub">Checking authentication markers…</div>
+                </div>
+                <div class="auth-score">
+                  <div class="auth-pct"  id="auth-pct">—</div>
+                  <div class="auth-pct-lbl">Auth Score</div>
+                </div>
+              </div>
+
+              <!-- Drug info accordion -->
+              <div class="info-section" id="sec-druginfo">
+                <div class="info-section-head" onclick="toggleSection('druginfo')">
+                  <div class="info-section-title">💊 Drug Information</div>
+                  <span class="info-section-arrow">▾</span>
+                </div>
+                <div class="info-section-body" id="body-druginfo">
+                  <div id="drug-info-rows"></div>
+                </div>
+              </div>
+
+              <!-- Dosage -->
+              <div class="info-section" id="sec-dosage">
+                <div class="info-section-head" onclick="toggleSection('dosage')">
+                  <div class="info-section-title">📋 Dosage &amp; Administration</div>
+                  <span class="info-section-arrow">▾</span>
+                </div>
+                <div class="info-section-body" id="body-dosage">
+                  <div id="dosage-rows"></div>
+                </div>
+              </div>
+
+              <!-- Interactions -->
+              <div class="info-section" id="sec-interactions">
+                <div class="info-section-head" onclick="toggleSection('interactions')">
+                  <div class="info-section-title">⚠️ Drug Interactions</div>
+                  <span class="info-section-arrow">▾</span>
+                </div>
+                <div class="info-section-body" id="body-interactions">
+                  <div id="interaction-list"></div>
+                </div>
+              </div>
+
+              <!-- Counterfeit indicators -->
+              <div class="info-section" id="sec-counterfeit">
+                <div class="info-section-head" onclick="toggleSection('counterfeit')">
+                  <div class="info-section-title">🛡️ Authenticity Indicators</div>
+                  <span class="info-section-arrow">▾</span>
+                </div>
+                <div class="info-section-body" id="body-counterfeit">
+                  <div id="counterfeit-flags" class="flag-list"></div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="result-actions">
+                <button class="btn btn-primary"  onclick="saveResult()">💾 Save Result</button>
+                <a href="chat.html" class="btn btn-ghost">💬 Discuss with AI</a>
+                <button class="btn btn-teal"     onclick="clearResult()">↺ Scan Another</button>
+              </div>
+
+            </div><!-- /result-content -->
+          </div><!-- /result-panel -->
+        </div><!-- /scanner-layout -->
+
+        <!-- ── SCAN HISTORY ──────────────────── -->
+        <div class="anim-4" id="history-section" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
+            <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800">Recent Scans</div>
+            <span style="font-size:var(--text-xs);color:var(--muted)" id="history-count"></span>
+          </div>
+          <div class="scan-history" id="history-list"></div>
+        </div>
+
+      </div><!-- /scanner-wrap -->
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider or pharmacist.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+
+// ── State ─────────────────────────────────────────────────────
+let _user       = null;
+let _profile    = null;
+let _stream     = null;          // MediaStream
+let _captured   = null;          // { base64, mimeType }
+let _uploadData = null;          // { base64, mimeType }
+let _scanHistory= [];
+let _currentMode= 'camera';
+let _lastResult = null;
+
+// ── Mode switching ─────────────────────────────────────────────
+function setMode(mode) {
+  _currentMode = mode;
+  ['camera','upload','text'].forEach(m => {
+    document.getElementById(`mode-${m}`).style.display = m===mode ? '' : 'none';
+    document.getElementById(`tab-${m}`).classList.toggle('active', m===mode);
+  });
+  if (mode !== 'camera' && _stream) stopCamera();
+}
+
+// ── Camera ────────────────────────────────────────────────────
+async function startCamera() {
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:960} }
+    });
+    const video = document.getElementById('camera-video');
+    video.srcObject = _stream;
+    video.style.display = 'block';
+    document.getElementById('vf-idle').style.display    = 'none';
+    document.getElementById('scan-line').classList.add('active');
+    document.getElementById('cam-start-btn').style.display   = 'none';
+    document.getElementById('cam-capture-btn').style.display = '';
+    document.getElementById('cam-stop-btn').style.display    = '';
+  } catch(e) {
+    zedToast('Camera access denied. Try Upload or Search mode.', 'error');
+    setMode('upload');
+  }
+}
+
+function capturePhoto() {
+  const video  = document.getElementById('camera-video');
+  const canvas = document.getElementById('capture-canvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  _captured = { base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+
+  // Show preview
+  const preview = document.getElementById('preview-img');
+  preview.src = dataUrl;
+  preview.style.display = 'block';
+  video.style.display   = 'none';
+  document.getElementById('preview-badge').style.display = 'block';
+  document.getElementById('scan-line').classList.remove('active');
+
+  document.getElementById('cam-capture-btn').style.display = 'none';
+  document.getElementById('cam-retake-btn').style.display  = '';
+  document.getElementById('cam-scan-btn').style.display    = '';
+}
+
+function retakePhoto() {
+  _captured = null;
+  document.getElementById('preview-img').style.display    = 'none';
+  document.getElementById('preview-badge').style.display  = 'none';
+  document.getElementById('camera-video').style.display   = 'block';
+  document.getElementById('scan-line').classList.add('active');
+  document.getElementById('cam-retake-btn').style.display  = 'none';
+  document.getElementById('cam-scan-btn').style.display    = 'none';
+  document.getElementById('cam-capture-btn').style.display = '';
+}
+
+function stopCamera() {
+  if (_stream) { _stream.getTracks().forEach(t=>t.stop()); _stream = null; }
+  document.getElementById('camera-video').style.display   = 'none';
+  document.getElementById('vf-idle').style.display        = 'flex';
+  document.getElementById('scan-line').classList.remove('active');
+  document.getElementById('cam-start-btn').style.display  = '';
+  document.getElementById('cam-capture-btn').style.display= 'none';
+  document.getElementById('cam-stop-btn').style.display   = 'none';
+}
+
+function scanCaptured() {
+  if (!_captured) { zedToast('Capture a photo first','warn'); return; }
+  analyseImage(_captured.base64, _captured.mimeType, 'camera');
+}
+
+// ── File upload ───────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  if (!file.type.startsWith('image/')) {
+    zedToast('Please upload an image file (JPG, PNG, WEBP)', 'warn'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    _uploadData = { base64: dataUrl.split(',')[1], mimeType: file.type };
+    document.getElementById('upload-preview-img').src = dataUrl;
+    document.getElementById('upload-preview').style.display = 'block';
+    document.getElementById('upload-zone').style.display    = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearUpload() {
+  _uploadData = null;
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-zone').style.display    = '';
+  document.getElementById('file-input').value = '';
+}
+
+function scanUploadedImage() {
+  if (!_uploadData) { zedToast('Please upload an image first','warn'); return; }
+  analyseImage(_uploadData.base64, _uploadData.mimeType, 'upload');
+}
+
+// ── Text search ───────────────────────────────────────────────
+function quickSearch(name) {
+  document.getElementById('drug-search-input').value = name;
+  searchByName();
+}
+
+function searchByName() {
+  const val = document.getElementById('drug-search-input').value.trim();
+  if (!val) { zedToast('Please enter a drug name', 'warn'); return; }
+  analyseText(val);
+}
+
+// ── Show loading state ─────────────────────────────────────────
+function showLoading(title, sub) {
+  document.getElementById('result-empty').style.display    = 'none';
+  document.getElementById('result-content').style.display  = 'none';
+  document.getElementById('result-loading').classList.add('active');
+  document.getElementById('loading-title').textContent     = title || 'Analysing…';
+  document.getElementById('loading-sub').textContent       = sub   || 'Please wait…';
+}
+
+function hideLoading() {
+  document.getElementById('result-loading').classList.remove('active');
+}
+
+// ── Core AI analysis (image) ───────────────────────────────────
+async function analyseImage(base64, mimeType, source) {
+  showLoading('Scanning Medicine…', 'Identifying drug, checking labels and authenticity markers.');
+
+  const medsCtx = _profile?.medications
+    ? `The patient currently takes: ${_profile.medications}.`
+    : 'No current medications on record.';
+
+  const prompt = `You are a pharmaceutical expert AI. Analyse this medicine image carefully.
+
+${medsCtx}
+
+Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
+{
+  "identified": true,
+  "drug_name": "Full drug name with strength",
+  "generic_name": "Generic/INN name",
+  "brand_name": "Brand name if visible",
+  "manufacturer": "Manufacturer name if visible",
+  "strength": "e.g. 500mg",
+  "form": "tablet/capsule/liquid/injection/etc",
+  "active_ingredient": "Main active ingredient(s)",
+  "atc_code": "ATC code if known, else null",
+  "authenticity_score": 72,
+  "authenticity_verdict": "authentic|caution|suspect|unverifiable",
+  "authenticity_reason": "Brief reason for verdict",
+  "indications": ["condition1", "condition2"],
+  "contraindications": ["condition1"],
+  "standard_dose": "e.g. 1–2 tablets every 4–6 hours",
+  "max_daily_dose": "e.g. 4000mg/day",
+  "onset": "e.g. 30–60 minutes",
+  "duration": "e.g. 4–6 hours",
+  "storage": "e.g. Store below 25°C",
+  "pregnancy_category": "A/B/C/D/X or null",
+  "interactions": [
+    {"drug":"Drug name","severity":"severe|moderate|minor","description":"What happens"}
+  ],
+  "authenticity_flags": [
+    {"pass":true,"check":"Hologram/security seal present","detail":"Visible security features noted"},
+    {"pass":true,"check":"Label print quality","detail":"Crisp, professional printing with correct font"},
+    {"pass":true,"check":"Batch number format","detail":"Standard format present"},
+    {"pass":true,"check":"Expiry date format","detail":"Standard DD/MM/YYYY format"},
+    {"pass":false,"check":"NAFDAC/regulatory number","detail":"Could not verify in image"}
+  ],
+  "warnings": ["Important warning 1", "Important warning 2"],
+  "regulatory_note": "Brief note on approval status (FDA/EMA/NAFDAC/etc)"
+}
+
+If the image is not a medicine, set identified:false and use null for all other fields.`;
+
+  try {
+    const raw = await ZedAI.analyzeImage(base64, mimeType, prompt);
+    const data = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderResult(data, source);
+  } catch(e) {
+    console.error('Scan error:', e);
+    hideLoading();
+    zedToast('Analysis failed. Check your connection and try again.', 'error');
+    document.getElementById('result-empty').style.display = '';
+  }
+}
+
+// ── Core AI analysis (text) ────────────────────────────────────
+async function analyseText(drugName) {
+  showLoading(`Looking up ${drugName}…`, 'Fetching drug information, dosage and interaction data.');
+
+  const medsCtx = _profile?.medications
+    ? `The patient currently takes: ${_profile.medications}.`
+    : 'No current medications on record.';
+
+  const prompt = `You are a pharmaceutical expert AI. Provide comprehensive information about: "${drugName}"
+
+${medsCtx}
+
+Return ONLY a valid JSON object (no markdown):
+{
+  "identified": true,
+  "drug_name": "${drugName}",
+  "generic_name": "Generic/INN name",
+  "brand_name": "Common brand name(s)",
+  "manufacturer": "Major manufacturers",
+  "strength": "Available strengths",
+  "form": "Available forms",
+  "active_ingredient": "Active ingredient(s)",
+  "atc_code": "ATC code",
+  "authenticity_score": 95,
+  "authenticity_verdict": "authentic",
+  "authenticity_reason": "Text search — visual authentication not possible. Information sourced from pharmacopoeial data.",
+  "indications": ["approved use 1", "approved use 2", "approved use 3"],
+  "contraindications": ["contraindication 1", "contraindication 2"],
+  "standard_dose": "Standard adult dosage",
+  "max_daily_dose": "Maximum daily dose",
+  "onset": "Time to effect",
+  "duration": "Duration of action",
+  "storage": "Storage conditions",
+  "pregnancy_category": "Category",
+  "interactions": [
+    {"drug":"Drug A","severity":"severe|moderate|minor","description":"Interaction effect"}
+  ],
+  "authenticity_flags": [
+    {"pass":true,"check":"WHO Essential Medicine","detail":"Listed on WHO essential medicines list"},
+    {"pass":true,"check":"Regulatory approval","detail":"Approved by major regulatory bodies (FDA/EMA)"},
+    {"pass":true,"check":"Pharmacopoeial standard","detail":"Monograph in BP/USP/IP"},
+    {"pass":true,"check":"Generic availability","detail":"Multiple approved generic versions exist"},
+    {"pass":true,"check":"Known counterfeit risk","detail":"Risk level for this drug class"}
+  ],
+  "warnings": ["Key warning 1", "Key warning 2"],
+  "regulatory_note": "Approval and scheduling status"
+}`;
+
+  try {
+    const raw = await ZedAI.chat([{ role:'user', content: prompt }], {
+      model: 'claude-sonnet-4-6', max_tokens: 1200
+    });
+    const data = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderResult(data, 'text');
+  } catch(e) {
+    console.error('Text search error:', e);
+    hideLoading();
+    zedToast('Search failed. Check your connection.', 'error');
+    document.getElementById('result-empty').style.display = '';
+  }
+}
+
+// ── Render result ──────────────────────────────────────────────
+function renderResult(data, source) {
+  hideLoading();
+
+  if (!data.identified) {
+    zedToast('Could not identify a medicine. Try a clearer photo or search by name.', 'warn');
+    document.getElementById('result-empty').style.display = '';
+    return;
+  }
+
+  _lastResult = data;
+
+  // Auth card
+  const VERDICTS = {
+    authentic:    { cls:'authentic', icon:'✅', label:'Likely Authentic',    color:'var(--success)' },
+    caution:      { cls:'caution',   icon:'⚠️', label:'Verification Needed', color:'var(--warn)'    },
+    suspect:      { cls:'suspect',   icon:'🚨', label:'Suspect — Do Not Use',color:'var(--error)'   },
+    unverifiable: { cls:'unknown',   icon:'🔍', label:'Cannot Verify',       color:'var(--sky)'     }
+  };
+  const v = VERDICTS[data.authenticity_verdict] || VERDICTS.unverifiable;
+  document.getElementById('auth-card').className  = `auth-card ${v.cls}`;
+  document.getElementById('auth-icon').textContent = v.icon;
+  document.getElementById('auth-title').textContent= `${data.drug_name} — ${v.label}`;
+  document.getElementById('auth-sub').textContent  = data.authenticity_reason || '';
+  document.getElementById('auth-pct').textContent  = `${data.authenticity_score||'—'}%`;
+  document.getElementById('auth-pct').style.color  = v.color;
+
+  // Drug info rows
+  const infoRows = [
+    ['Generic Name',    data.generic_name      || '—'],
+    ['Brand Name',      data.brand_name        || '—'],
+    ['Manufacturer',    data.manufacturer      || '—'],
+    ['Active Ingredient',data.active_ingredient|| '—'],
+    ['Strength',        data.strength          || '—'],
+    ['Form',            data.form              || '—'],
+    ['ATC Code',        data.atc_code          || '—'],
+    ['Indications',     (data.indications||[]).join(', ')         || '—'],
+    ['Contraindications',(data.contraindications||[]).join('; ')  || 'None listed'],
+    ['Pregnancy',       data.pregnancy_category|| 'Not classified'],
+    ['Regulatory',      data.regulatory_note   || '—'],
+  ];
+  document.getElementById('drug-info-rows').innerHTML = infoRows.map(([l,v])=>
+    `<div class="drug-row"><div class="drug-row-label">${l}</div><div class="drug-row-val">${v}</div></div>`
+  ).join('');
+  openSection('druginfo');
+
+  // Dosage rows
+  const dosageRows = [
+    ['Standard Dose',  data.standard_dose  || '—'],
+    ['Max Daily Dose', data.max_daily_dose || '—'],
+    ['Onset',          data.onset          || '—'],
+    ['Duration',       data.duration       || '—'],
+    ['Storage',        data.storage        || 'Room temperature'],
+    ['Warnings',       (data.warnings||[]).join(' • ') || 'See package insert'],
+  ];
+  document.getElementById('dosage-rows').innerHTML = dosageRows.map(([l,v])=>
+    `<div class="drug-row"><div class="drug-row-label">${l}</div><div class="drug-row-val">${v}</div></div>`
+  ).join('');
+
+  // Interactions
+  const intList = data.interactions || [];
+  document.getElementById('interaction-list').innerHTML = intList.length
+    ? intList.map(i=>`
+        <div class="interaction-item">
+          <span class="int-sev ${i.severity}">${i.severity}</span>
+          <div class="int-body"><h4>${i.drug}</h4><p>${i.description}</p></div>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:var(--text-sm);padding:.5rem 0">No significant interactions found with your current medications.</div>';
+  if (intList.some(i=>i.severity==='severe')) openSection('interactions');
+
+  // Authenticity flags
+  const flags = data.authenticity_flags || [];
+  document.getElementById('counterfeit-flags').innerHTML = flags.map(f=>`
+    <div class="flag-item">
+      <span class="flag-ico">${f.pass?'✅':'❌'}</span>
+      <div class="flag-body"><h4>${f.check}</h4><p>${f.detail}</p></div>
+    </div>`).join('');
+
+  document.getElementById('result-content').style.display = '';
+
+  // Save to history
+  addToHistory(data, source);
+}
+
+// ── Accordion ─────────────────────────────────────────────────
+function toggleSection(id) {
+  const head = document.querySelector(`#sec-${id} .info-section-head`);
+  const body = document.getElementById(`body-${id}`);
+  head.classList.toggle('open');
+  body.classList.toggle('open');
+}
+function openSection(id) {
+  document.querySelector(`#sec-${id} .info-section-head`).classList.add('open');
+  document.getElementById(`body-${id}`).classList.add('open');
+}
+
+// ── History ────────────────────────────────────────────────────
+function addToHistory(data, source) {
+  const entry = {
+    id:       Date.now(),
+    name:     data.drug_name,
+    verdict:  data.authenticity_verdict,
+    score:    data.authenticity_score,
+    source,
+    time:     new Date().toISOString()
+  };
+  _scanHistory.unshift(entry);
+  if (_scanHistory.length > 20) _scanHistory.pop();
+  try { localStorage.setItem('zed-scan-history', JSON.stringify(_scanHistory)); } catch{}
+  renderHistory();
+}
+
+function renderHistory() {
+  const sec  = document.getElementById('history-section');
+  const list = document.getElementById('history-list');
+  if (!_scanHistory.length) { sec.style.display='none'; return; }
+  sec.style.display = '';
+  document.getElementById('history-count').textContent = `${_scanHistory.length} recent scan${_scanHistory.length>1?'s':''}`;
+
+  const BADGE = {
+    authentic:    { bg:'rgba(0,212,160,.12)',  c:'var(--success)', label:'Authentic'  },
+    caution:      { bg:'rgba(255,170,68,.12)', c:'var(--warn)',    label:'Caution'    },
+    suspect:      { bg:'rgba(255,92,122,.12)', c:'var(--error)',   label:'Suspect'    },
+    unverifiable: { bg:'rgba(100,130,154,.1)', c:'var(--sky)',     label:'Unverifiable'}
+  };
+
+  list.innerHTML = _scanHistory.slice(0,8).map(h=>{
+    const b = BADGE[h.verdict] || BADGE.unverifiable;
+    return `<div class="sh-item">
+      <div class="sh-img">💊</div>
+      <div class="sh-info">
+        <div class="sh-name">${h.name}</div>
+        <div class="sh-meta">${sourceLabel(h.source)} · ${zedRelTime(h.time)}</div>
+      </div>
+      <span class="sh-badge" style="background:${b.bg};color:${b.c}">${b.label}</span>
+    </div>`;
+  }).join('');
+}
+
+function sourceLabel(s) {
+  return s==='camera'?'Camera scan':s==='upload'?'Image upload':'Text search';
+}
+
+// ── Save result to Supabase ────────────────────────────────────
+async function saveResult() {
+  if (!_lastResult || !_user) return;
+  try {
+    await _supabase.from('medicine_scans').insert({
+      user_id:    _user.id,
+      drug_name:  _lastResult.drug_name,
+      verdict:    _lastResult.authenticity_verdict,
+      score:      _lastResult.authenticity_score,
+      result:     JSON.stringify(_lastResult),
+      scanned_at: new Date().toISOString()
+    });
+    zedToast('Scan result saved to your profile ✓', 'success');
+  } catch(e) {
+    // Table may not exist yet — save locally
+    zedToast('Saved locally (add medicine_scans table to enable cloud sync)', 'info');
+  }
+}
+
+function clearResult() {
+  _lastResult = null;
+  _captured   = null;
+  _uploadData = null;
+  document.getElementById('result-content').style.display  = 'none';
+  document.getElementById('result-empty').style.display    = '';
+  if (_currentMode === 'camera') retakePhoto();
+  if (_currentMode === 'upload') clearUpload();
+  if (_currentMode === 'text')   document.getElementById('drug-search-input').value = '';
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+  _user = await ZedAuth.requireAuth();
+  if (!_user) return;
+
+  const { data: profile } = await ZedProfile.get(_user.id);
+  _profile = profile;
+
+  const firstName = ZedProfile.displayName(profile, _user).split(' ')[0];
+  document.getElementById('sb-name').textContent = firstName;
+  if (profile?.blood_group) document.getElementById('sb-sub').textContent = `🩸 ${profile.blood_group}`;
+
+  // Load scan history from localStorage
+  try {
+    const saved = localStorage.getItem('zed-scan-history');
+    if (saved) { _scanHistory = JSON.parse(saved); renderHistory(); }
+  } catch{}
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Report Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.report-wrap { padding:1.5rem 1.5rem 3rem; display:flex; flex-direction:column; gap:1.5rem; max-width:960px; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed rgba(0,180,166,.3); border-radius: var(--radius-xl);
+  padding: 2.5rem; text-align: center; cursor: pointer;
+  background: rgba(0,180,166,.03);
+  transition: all .2s; position: relative; overflow: hidden;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--teal); background: rgba(0,180,166,.07);
+}
+.upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+.upload-title { font-family:'Syne',sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: .4rem; }
+.upload-sub   { font-size: var(--text-sm); color: rgba(255,255,255,.45); margin-bottom: 1.2rem; }
+.upload-types { font-size: var(--text-xs); color: rgba(255,255,255,.28); }
+#file-input   { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Preview */
+.file-preview { display:flex; align-items:center; gap:1rem; padding:1rem; background:rgba(0,180,166,.07); border:1px solid rgba(0,180,166,.2); border-radius:var(--radius-md); }
+.fp-icon { font-size:2rem; flex-shrink:0; }
+.fp-name { font-weight:600; font-size:var(--text-sm); }
+.fp-size { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-top:.18rem; }
+.fp-remove { margin-left:auto; background:none; border:none; color:rgba(255,255,255,.35); font-size:1.1rem; cursor:pointer; padding:.3rem; transition:color .18s; }
+.fp-remove:hover { color:var(--error); }
+
+/* Analysis type pills */
+.type-grid { display:flex; flex-wrap:wrap; gap:.6rem; }
+.type-btn {
+  padding:.55rem 1.1rem; border-radius:99px; cursor:pointer;
+  background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.1);
+  font-size:var(--text-sm); color:rgba(255,255,255,.6);
+  transition:all .2s; font-family:'DM Sans',sans-serif; font-weight:500;
+  display:flex; align-items:center; gap:.5rem;
+}
+.type-btn:hover  { border-color:rgba(0,180,166,.3); color:#fff; }
+.type-btn.active { background:rgba(0,180,166,.12); border-color:var(--teal); color:#fff; font-weight:600; }
+
+/* Result */
+.result-box { background:linear-gradient(145deg,rgba(0,180,166,.07),rgba(79,200,224,.03)); border:1.5px solid rgba(0,180,166,.18); border-radius:var(--radius-xl); padding:1.5rem; }
+.section-title { font-family:'Syne',sans-serif; font-size:.82rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--teal-light); margin:1.1rem 0 .55rem; display:flex; align-items:center; gap:.4rem; }
+.section-title:first-child { margin-top:0; }
+.prose { font-size:var(--text-sm); color:rgba(255,255,255,.8); line-height:1.8; }
+.prose ul { padding-left:1.2rem; margin-top:.4rem; }
+.prose li { margin-bottom:.28rem; }
+.finding-row { display:flex; align-items:flex-start; gap:.8rem; padding:.65rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.finding-row:last-child { border-bottom:none; }
+.finding-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:.25rem; }
+.finding-dot.normal  { background:var(--success); }
+.finding-dot.concern { background:var(--warn); }
+.finding-dot.critical{ background:var(--error); animation:blink 1s infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.finding-text { flex:1; }
+.finding-name { font-size:var(--text-sm); font-weight:600; }
+.finding-desc { font-size:var(--text-xs); color:rgba(255,255,255,.5); margin-top:.1rem; line-height:1.5; }
+
+/* Loading */
+.loading-state { display:flex; flex-direction:column; align-items:center; gap:1rem; padding:2.5rem; text-align:center; }
+.spin-ring { width:52px; height:52px; border-radius:50%; border:3px solid rgba(0,180,166,.2); border-top-color:var(--teal); animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-steps { font-size:var(--text-xs); color:rgba(255,255,255,.35); }
+
+/* History list */
+.rep-item { display:flex; align-items:center; gap:.9rem; padding:.75rem 0; border-bottom:1px solid rgba(255,255,255,.05); cursor:pointer; transition:opacity .18s; }
+.rep-item:last-child { border-bottom:none; }
+.rep-item:hover { opacity:.8; }
+.rep-ico { width:38px; height:38px; border-radius:11px; background:rgba(0,180,166,.1); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+.rep-name { font-size:var(--text-sm); font-weight:600; }
+.rep-meta { font-size:var(--text-xs); color:rgba(255,255,255,.38); margin-top:.1rem; }
+
+@media(max-width:600px){ .report-wrap{padding:1rem 1rem 2.5rem;} }
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item active"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div><div class="topbar-title">📋 Report Analyzer</div><div class="topbar-sub">Upload lab results or imaging reports</div></div>
+      </div>
+      <div class="topbar-right">
+        <a href="chat.html" class="btn btn-primary btn-sm">🤖 AI Chat</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="report-wrap">
+
+        <!-- Upload -->
+        <div class="card anim-1">
+          <div class="card-header"><div class="card-title">📤 Upload Report</div></div>
+          <div class="upload-zone" id="drop-zone" ondragover="onDrag(event,true)" ondragleave="onDrag(event,false)" ondrop="onDrop(event)">
+            <input type="file" id="file-input" accept="image/*,.pdf" onchange="onFileSelect(event)"/>
+            <div class="upload-icon" id="up-icon">📄</div>
+            <div class="upload-title" id="up-title">Drop your report here or click to browse</div>
+            <div class="upload-sub" id="up-sub">Lab results, blood panels, X-ray reports, MRI summaries, prescriptions</div>
+            <div class="upload-types">Supports: JPG, PNG, WEBP, PDF (image scan)</div>
+          </div>
+          <div id="file-preview" style="display:none;margin-top:.9rem"></div>
+        </div>
+
+        <!-- Analysis type -->
+        <div class="card anim-2" id="type-card" style="display:none">
+          <div class="card-header"><div class="card-title">🔍 Analysis Type</div></div>
+          <div class="type-grid">
+            <button class="type-btn active" onclick="selectType(this,'general')">🔬 General Analysis</button>
+            <button class="type-btn" onclick="selectType(this,'blood')">🩸 Blood Panel / CBC</button>
+            <button class="type-btn" onclick="selectType(this,'imaging')">🫀 Imaging Report</button>
+            <button class="type-btn" onclick="selectType(this,'prescription')">💊 Prescription</button>
+            <button class="type-btn" onclick="selectType(this,'urine')">🧪 Urinalysis</button>
+            <button class="type-btn" onclick="selectType(this,'cardiac')">❤️ Cardiac</button>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:1.1rem">
+            <button class="btn btn-primary" onclick="analyse()">🔬 Analyse Report →</button>
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div id="result-section" style="display:none"></div>
+
+        <!-- History -->
+        <div class="card anim-3" id="hist-card">
+          <div class="card-header"><div class="card-title">🕒 Previous Reports</div></div>
+          <div id="hist-list">
+            <div class="skel" style="height:13px;width:75%;margin-bottom:.8rem"></div>
+            <div class="skel" style="height:13px;width:55%"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+let _user = null, _profile = null;
+let _fileData = null; // { base64, mimeType, name, size }
+let _analysisType = 'general';
+
+function onDrag(e, over) { e.preventDefault(); document.getElementById('drop-zone').classList.toggle('drag-over', over); }
+function onDrop(e) {
+  e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0]; if (file) handleFile(file);
+}
+function onFileSelect(e) { const f = e.target.files[0]; if (f) handleFile(f); }
+function selectType(el, t) { _analysisType = t; document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active'); }
+
+function handleFile(file) {
+  const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
+  if (!allowed.includes(file.type)) { zedToast('Please upload an image or PDF', 'warn'); return; }
+  if (file.size > 10 * 1024 * 1024) { zedToast('File too large — max 10 MB', 'warn'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const base64  = dataUrl.split(',')[1];
+    const mimeType= file.type === 'application/pdf' ? 'image/png' : file.type; // PDF treated as image scan
+
+    _fileData = { base64, mimeType, name: file.name, size: file.size };
+
+    // Show preview
+    const sizeStr = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : Math.round(file.size/1024)+' KB';
+    document.getElementById('file-preview').style.display = '';
+    document.getElementById('file-preview').innerHTML = `
+      <div class="file-preview">
+        <div class="fp-icon">${file.type.includes('pdf') ? '📄' : '🖼️'}</div>
+        <div><div class="fp-name">${file.name}</div><div class="fp-size">${sizeStr}</div></div>
+        <button class="fp-remove" onclick="clearFile()" title="Remove">✕</button>
+      </div>`;
+    document.getElementById('type-card').style.display = '';
+    document.getElementById('up-icon').textContent  = '✅';
+    document.getElementById('up-title').textContent = 'File ready for analysis';
+    document.getElementById('up-sub').textContent   = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFile() {
+  _fileData = null;
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('type-card').style.display = 'none';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('up-icon').textContent  = '📄';
+  document.getElementById('up-title').textContent = 'Drop your report here or click to browse';
+  document.getElementById('up-sub').textContent   = 'Lab results, blood panels, X-ray reports, MRI summaries, prescriptions';
+  document.getElementById('file-input').value = '';
+}
+
+async function analyse() {
+  if (!_fileData) { zedToast('Please upload a file first', 'warn'); return; }
+  const sec = document.getElementById('result-section');
+  sec.style.display = '';
+  sec.innerHTML = `<div class="card"><div class="loading-state">
+    <div class="spin-ring"></div>
+    <div style="font-family:'Syne',sans-serif;font-weight:700">Analysing your report…</div>
+    <div class="loading-steps">Reading values · Checking ranges · Generating insights</div>
+  </div></div>`;
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  const p = _profile || {};
+  const profileCtx = p.age
+    ? `Patient: ${[p.first_name,p.last_name].filter(Boolean).join(' ')||'Unknown'}, Age ${p.age}, ${p.gender||'?'}. Conditions: ${p.conditions||'None'}. Medications: ${p.medications||'None'}.`
+    : 'No patient profile.';
+
+  const typeLabel = { general:'general medical','blood':'blood panel / CBC','imaging':'imaging / radiology','prescription':'prescription','urine':'urinalysis','cardiac':'cardiac' }[_analysisType] || 'general';
+  const prompt = `You are a clinical AI assistant. Analyse this ${typeLabel} report image. Respond ONLY in valid JSON.
+
+${profileCtx}
+
+JSON structure:
+{
+  "summary": "2-3 sentence plain-English summary",
+  "report_type": "detected type",
+  "findings": [
+    {"name":"Finding name","value":"Measured value if any","status":"normal|concern|critical","description":"plain explanation"}
+  ],
+  "key_concerns": ["concern 1","concern 2"],
+  "normal_results": ["normal finding"],
+  "recommendations": ["recommendation 1","recommendation 2"],
+  "follow_up": "When and why to follow up",
+  "patient_explanation": "Explain this report as if talking to the patient in simple terms",
+  "urgency": "routine|soon|urgent|emergency"
+}`;
+
+  try {
+    const raw = await ZedAI.analyzeImage(_fileData.base64, _fileData.mimeType, prompt);
+    const data = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderResult(data);
+
+    // Save to Supabase
+    ZedReports.save(_user.id, {
+      file_name: _fileData.name,
+      analysis_type: _analysisType,
+      result: JSON.stringify(data)
+    }).catch(()=>{});
+    await loadHistory();
+  } catch(e) {
+    sec.innerHTML = `<div class="card"><div style="text-align:center;padding:1.5rem;color:var(--error)">⚠️ Analysis failed: ${e.message}</div><div style="text-align:center;margin-top:1rem"><button class="btn btn-ghost" onclick="analyse()">Try Again</button></div></div>`;
+  }
+}
+
+function renderResult(d) {
+  const URG = { routine:'✅ Routine follow-up', soon:'⚠️ See doctor soon', urgent:'🚨 Seek care promptly', emergency:'🚨 EMERGENCY — seek immediate care' };
+  const urgCls = { routine:'urgency-low', soon:'urgency-med', urgent:'urgency-high', emergency:'urgency-high' };
+
+  const findings = (d.findings||[]).map(f => `
+    <div class="finding-row">
+      <div class="finding-dot ${f.status}"></div>
+      <div class="finding-text">
+        <div class="finding-name">${f.name}${f.value?` — <span style="color:var(--teal-light)">${f.value}</span>`:''}</div>
+        <div class="finding-desc">${f.description}</div>
+      </div>
+    </div>`).join('');
+
+  const recs = (d.recommendations||[]).map(r => `<li>${r}</li>`).join('');
+  const concerns = (d.key_concerns||[]).map(c => `<li>${c}</li>`).join('');
+
+  document.getElementById('result-section').innerHTML = `
+    <div class="result-box anim-1">
+      <div style="display:flex;align-items:center;gap:.85rem;margin-bottom:1.1rem">
+        <div style="width:48px;height:48px;border-radius:14px;background:rgba(0,180,166,.15);border:1.5px solid rgba(0,180,166,.25);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">📋</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800">${d.report_type || 'Medical Report'}</div>
+          <div style="font-size:var(--text-xs);color:rgba(255,255,255,.4)">${_fileData?.name||''}</div>
+        </div>
+      </div>
+      <div style="padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem" class="${urgCls[d.urgency]||'urgency-low'} urgency-banner">${URG[d.urgency]||'✅ No urgent concerns'}</div>
+      <div class="section-title">📖 Summary</div>
+      <div class="prose">${d.summary||''}</div>
+      ${concerns ? `<div class="section-title">⚠️ Key Concerns</div><div class="prose"><ul>${concerns}</ul></div>` : ''}
+      <div class="section-title">🔬 Findings</div>
+      ${findings||'<div class="prose" style="color:rgba(255,255,255,.4)">No specific findings extracted.</div>'}
+      ${recs ? `<div class="section-title">📋 Recommendations</div><div class="prose"><ul>${recs}</ul></div>` : ''}
+      ${d.follow_up ? `<div class="section-title">📅 Follow Up</div><div class="prose">${d.follow_up}</div>` : ''}
+      <div class="section-title">💬 Plain-English Explanation</div>
+      <div class="prose">${d.patient_explanation||''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.2rem">
+        <a href="chat.html" class="btn btn-primary btn-sm">💬 Discuss with AI</a>
+        <a href="hospitals.html" class="btn btn-ghost btn-sm">🏥 Find Care</a>
+        <button class="btn btn-ghost btn-sm" onclick="clearFile();document.getElementById('result-section').style.display='none'">↺ New Report</button>
+      </div>
+    </div>`;
+}
+
+async function loadHistory() {
+  const { data } = await ZedReports.list(_user.id, 8);
+  const el = document.getElementById('hist-list');
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty-state">No reports yet. Upload your first above.</div>';
+    return;
+  }
+  el.innerHTML = data.map(r => {
+    const d = JSON.parse(r.result||'{}');
+    return `<div class="rep-item">
+      <div class="rep-ico">📋</div>
+      <div><div class="rep-name">${r.file_name||'Report'}</div><div class="rep-meta">${d.report_type||r.analysis_type||'Medical'} · ${zedRelTime(r.analyzed_at)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+async function init() {
+  _user = await ZedAuth.requireAuth(); if (!_user) return;
+  const { data: p } = await ZedProfile.get(_user.id);
+  _profile = p;
+  document.getElementById('sb-name').textContent = ZedProfile.displayName(p, _user).split(' ')[0];
+  await loadHistory();
+}
+init();
+</script>
+</body>
+</html>

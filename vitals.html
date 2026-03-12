@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Vitals Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.vitals-page { padding:1.5rem 1.5rem 3rem; display:flex; flex-direction:column; gap:1.5rem; max-width:900px; }
+
+/* Input grid */
+.input-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.vital-input-card {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-lg); padding:1.2rem;
+  transition:border-color .2s;
+}
+.vital-input-card:focus-within { border-color:rgba(0,180,166,.3); }
+.vi-header { display:flex; align-items:center; gap:.65rem; margin-bottom:.9rem; }
+.vi-ico { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.vi-name { font-family:'Syne',sans-serif; font-size:.88rem; font-weight:700; }
+.vi-unit { font-size:var(--text-xs); color:rgba(255,255,255,.38); }
+.vi-input { width:100%; padding:.65rem .9rem; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:10px; color:#fff; font-family:'Syne',sans-serif; font-size:1.35rem; font-weight:700; outline:none; transition:border-color .2s; }
+.vi-input:focus { border-color:var(--teal); }
+.vi-input::placeholder { font-size:1rem; font-weight:400; color:rgba(255,255,255,.22); font-family:'DM Sans',sans-serif; }
+.vi-row { display:flex; gap:.6rem; }
+.vi-range { font-size:var(--text-xs); color:rgba(255,255,255,.32); margin-top:.4rem; }
+.vi-status { display:inline-flex; align-items:center; gap:.3rem; font-size:var(--text-xs); font-weight:600; margin-top:.4rem; padding:.18rem .55rem; border-radius:99px; }
+.vi-status.ok   { background:rgba(0,212,160,.1);  color:var(--success); }
+.vi-status.warn { background:rgba(255,170,68,.1);  color:var(--warn); }
+.vi-status.high { background:rgba(255,92,122,.1);  color:var(--error); }
+
+/* History */
+.hist-table { width:100%; border-collapse:collapse; }
+.hist-table th { font-size:var(--text-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.35); padding:.6rem .8rem; border-bottom:1px solid var(--border); text-align:left; }
+.hist-table td { font-size:var(--text-sm); padding:.75rem .8rem; border-bottom:1px solid rgba(255,255,255,.04); color:rgba(255,255,255,.8); }
+.hist-table tr:last-child td { border-bottom:none; }
+.hist-table tr:hover td { background:rgba(255,255,255,.02); }
+.trend-up   { color:var(--success); font-weight:600; }
+.trend-warn { color:var(--warn); font-weight:600; }
+
+/* Sparkline card */
+.spark-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; }
+.spark-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; }
+.spark-label{ font-size:var(--text-xs); color:rgba(255,255,255,.45); margin-bottom:.3rem; }
+.spark-val  { font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; color:var(--teal-light); }
+.spark-unit { font-size:.65rem; color:rgba(255,255,255,.35); }
+.sparkline  { margin-top:.5rem; height:28px; }
+.sparkline svg { width:100%; height:100%; }
+
+@media(max-width:640px) {
+  .input-grid { grid-template-columns:1fr; }
+  .spark-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item active"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div><div class="topbar-title">❤️ Vitals Check</div><div class="topbar-sub">Log and track your health readings</div></div>
+      </div>
+      <div class="topbar-right">
+        <a href="dashboard.html" class="btn btn-ghost btn-sm">← Dashboard</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="vitals-page">
+
+        <!-- Trending sparklines -->
+        <div class="anim-1">
+          <div class="card-header" style="margin-bottom:.9rem">
+            <div class="card-title">📈 Latest Readings</div>
+            <span style="font-size:var(--text-xs);color:rgba(255,255,255,.35)" id="last-updated"></span>
+          </div>
+          <div class="spark-grid" id="spark-grid">
+            <div class="spark-card"><div class="spark-label">Heart Rate</div><div class="spark-val" id="sp-hr">—</div><span class="spark-unit">bpm</span><div class="sparkline"><svg id="svg-hr" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,14 100,14" fill="none" stroke="rgba(255,92,122,.4)" stroke-width="2"/></svg></div></div>
+            <div class="spark-card"><div class="spark-label">Blood Pressure</div><div class="spark-val" id="sp-bp">—</div><span class="spark-unit">mmHg</span><div class="sparkline"><svg id="svg-bp" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,14 100,14" fill="none" stroke="rgba(79,200,224,.4)" stroke-width="2"/></svg></div></div>
+            <div class="spark-card"><div class="spark-label">Temperature</div><div class="spark-val" id="sp-temp">—</div><span class="spark-unit">°F</span><div class="sparkline"><svg id="svg-temp" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,14 100,14" fill="none" stroke="rgba(255,170,68,.4)" stroke-width="2"/></svg></div></div>
+            <div class="spark-card"><div class="spark-label">SpO₂</div><div class="spark-val" id="sp-spo2">—</div><span class="spark-unit">%</span><div class="sparkline"><svg id="svg-spo2" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,14 100,14" fill="none" stroke="rgba(0,180,166,.4)" stroke-width="2"/></svg></div></div>
+          </div>
+        </div>
+
+        <!-- Log new reading -->
+        <div class="card anim-2">
+          <div class="card-header"><div class="card-title">➕ Log New Reading</div></div>
+          <div class="input-grid">
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(255,92,122,.12)">❤️</div><div><div class="vi-name">Heart Rate</div><div class="vi-unit">beats per minute (bpm)</div></div></div>
+              <input class="vi-input" id="in-hr" type="number" min="30" max="200" placeholder="72" oninput="liveStatus('hr',this.value)"/>
+              <div class="vi-range">Normal: 60–100 bpm</div>
+              <div id="st-hr"></div>
+            </div>
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(79,200,224,.12)">🩸</div><div><div class="vi-name">Blood Pressure</div><div class="vi-unit">systolic / diastolic (mmHg)</div></div></div>
+              <div class="vi-row">
+                <input class="vi-input" id="in-sys" type="number" min="60" max="220" placeholder="120" oninput="liveStatus('bp',null)" style="text-align:center"/>
+                <span style="display:flex;align-items:center;font-size:1.5rem;color:rgba(255,255,255,.3);padding:0 .2rem">/</span>
+                <input class="vi-input" id="in-dia" type="number" min="40" max="140" placeholder="80" oninput="liveStatus('bp',null)" style="text-align:center"/>
+              </div>
+              <div class="vi-range">Normal: 90–120 / 60–80 mmHg</div>
+              <div id="st-bp"></div>
+            </div>
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(255,170,68,.12)">🌡️</div><div><div class="vi-name">Temperature</div><div class="vi-unit">Fahrenheit (°F)</div></div></div>
+              <input class="vi-input" id="in-temp" type="number" min="90" max="110" step="0.1" placeholder="98.6" oninput="liveStatus('temp',this.value)"/>
+              <div class="vi-range">Normal: 97.6–99°F</div>
+              <div id="st-temp"></div>
+            </div>
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(0,180,166,.12)">💧</div><div><div class="vi-name">SpO₂</div><div class="vi-unit">Blood oxygen saturation (%)</div></div></div>
+              <input class="vi-input" id="in-spo2" type="number" min="70" max="100" placeholder="98" oninput="liveStatus('spo2',this.value)"/>
+              <div class="vi-range">Normal: ≥ 96%</div>
+              <div id="st-spo2"></div>
+            </div>
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(160,130,255,.12)">⚖️</div><div><div class="vi-name">Weight</div><div class="vi-unit">kilograms (kg) — optional</div></div></div>
+              <input class="vi-input" id="in-wt" type="number" min="20" max="300" step="0.1" placeholder="70.0"/>
+            </div>
+            <div class="vital-input-card">
+              <div class="vi-header"><div class="vi-ico" style="background:rgba(255,200,68,.12)">🩸</div><div><div class="vi-name">Blood Glucose</div><div class="vi-unit">mg/dL — optional</div></div></div>
+              <input class="vi-input" id="in-gluc" type="number" min="40" max="600" placeholder="95"/>
+              <div class="vi-range">Fasting normal: 70–100 mg/dL</div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:.6rem;margin-bottom:0">
+            <label>Notes (optional)</label>
+            <div class="field-wrap"><input id="in-notes" type="text" placeholder="After exercise, fasting, feeling unwell…" style="padding-left:.9rem"/></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+            <button class="btn btn-primary" id="save-btn" onclick="saveVitals()">💾 Save Reading</button>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="card anim-3">
+          <div class="card-header">
+            <div class="card-title">🕒 Reading History</div>
+            <span class="card-link" onclick="loadHistory()">Refresh</span>
+          </div>
+          <div id="hist-wrap" style="overflow-x:auto">
+            <div class="skel" style="height:14px;width:80%;margin-bottom:.8rem"></div>
+            <div class="skel" style="height:14px;width:65%;margin-bottom:.8rem"></div>
+            <div class="skel" style="height:14px;width:72%"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+let _user = null;
+
+function liveStatus(type, val) {
+  const V = ZedVitalRanges;
+  let s;
+  if (type === 'hr') {
+    const v = parseInt(val); if (!v) { document.getElementById('st-hr').innerHTML=''; return; }
+    s = V.heartRate(v);
+  } else if (type === 'bp') {
+    const sys = parseInt(document.getElementById('in-sys').value);
+    const dia = parseInt(document.getElementById('in-dia').value);
+    if (!sys || !dia) { document.getElementById('st-bp').innerHTML=''; return; }
+    s = V.bloodPressure(sys, dia);
+  } else if (type === 'temp') {
+    const v = parseFloat(val); if (!v) { document.getElementById('st-temp').innerHTML=''; return; }
+    s = V.temperature(v);
+  } else if (type === 'spo2') {
+    const v = parseInt(val); if (!v) { document.getElementById('st-spo2').innerHTML=''; return; }
+    s = V.spo2(v);
+  }
+  if (!s) return;
+  document.getElementById('st-'+type).innerHTML = `<span class="vi-status ${s.status}">${s.label}</span>`;
+}
+
+async function saveVitals() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const readings = {
+    heart_rate:   parseInt(document.getElementById('in-hr').value)   || null,
+    bp_systolic:  parseInt(document.getElementById('in-sys').value)  || null,
+    bp_diastolic: parseInt(document.getElementById('in-dia').value)  || null,
+    temperature:  parseFloat(document.getElementById('in-temp').value)|| null,
+    spo2:         parseInt(document.getElementById('in-spo2').value) || null,
+    weight:       parseFloat(document.getElementById('in-wt').value) || null,
+    blood_glucose:parseInt(document.getElementById('in-gluc').value) || null,
+    notes:        document.getElementById('in-notes').value.trim()   || null,
+  };
+
+  if (!Object.values(readings).some(v => v !== null)) {
+    zedToast('Please enter at least one reading', 'warn');
+    btn.disabled = false; btn.textContent = '💾 Save Reading';
+    return;
+  }
+
+  const { error } = await ZedVitals.save(_user.id, readings);
+  btn.disabled = false; btn.textContent = '💾 Save Reading';
+
+  if (error) { zedToast('Error saving: ' + error.message, 'error'); return; }
+  zedToast('Vitals saved ✓', 'success');
+
+  // clear inputs
+  ['in-hr','in-sys','in-dia','in-temp','in-spo2','in-wt','in-gluc','in-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['st-hr','st-bp','st-temp','st-spo2'].forEach(id => { document.getElementById(id).innerHTML=''; });
+
+  await loadHistory();
+  await loadLatest();
+}
+
+async function loadLatest() {
+  const { data } = await ZedVitals.latest(_user.id);
+  if (!data) return;
+  if (data.heart_rate)  document.getElementById('sp-hr').textContent   = data.heart_rate;
+  if (data.bp_systolic) document.getElementById('sp-bp').textContent   = `${data.bp_systolic}/${data.bp_diastolic}`;
+  if (data.temperature) document.getElementById('sp-temp').textContent = parseFloat(data.temperature).toFixed(1);
+  if (data.spo2)        document.getElementById('sp-spo2').textContent = data.spo2;
+  if (data.recorded_at) document.getElementById('last-updated').textContent = 'Last: ' + zedRelTime(data.recorded_at);
+}
+
+async function loadHistory() {
+  const { data } = await ZedVitals.history(_user.id, 14);
+  const wrap = document.getElementById('hist-wrap');
+  if (!data || !data.length) {
+    wrap.innerHTML = '<div class="empty-state">No readings yet. Log your first vitals above.</div>';
+    return;
+  }
+  wrap.innerHTML = `<table class="hist-table">
+    <thead><tr>
+      <th>Date</th><th>HR (bpm)</th><th>BP (mmHg)</th>
+      <th>Temp (°F)</th><th>SpO₂ (%)</th>
+    </tr></thead>
+    <tbody>
+      ${data.map(r => {
+        const d = new Date(r.recorded_at);
+        const dt = d.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const hrOk  = r.heart_rate  && r.heart_rate>=60&&r.heart_rate<=100;
+        const spo2Ok= r.spo2        && r.spo2>=96;
+        return `<tr>
+          <td>${dt}</td>
+          <td class="${r.heart_rate?(hrOk?'trend-up':'trend-warn'):''}">  ${r.heart_rate||'—'}</td>
+          <td>${r.bp_systolic?r.bp_systolic+'/'+r.bp_diastolic:'—'}</td>
+          <td>${r.temperature?parseFloat(r.temperature).toFixed(1):'—'}</td>
+          <td class="${r.spo2?(spo2Ok?'trend-up':'trend-warn'):''}">  ${r.spo2?r.spo2+'%':'—'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+
+  // Build sparklines from history (reversed for time order)
+  const rev = [...data].reverse();
+  buildSparkline('svg-hr',   rev.map(r => r.heart_rate),   60, 100, 'rgba(255,92,122,.6)');
+  buildSparkline('svg-spo2', rev.map(r => r.spo2),         90, 100, 'rgba(0,180,166,.6)');
+  buildSparkline('svg-temp', rev.map(r => r.temperature),  96, 102, 'rgba(255,170,68,.6)');
+  buildSparkline('svg-bp',   rev.map(r => r.bp_systolic),  90, 150, 'rgba(79,200,224,.6)');
+}
+
+function buildSparkline(svgId, vals, min, max, stroke) {
+  const valid = vals.filter(Boolean);
+  if (valid.length < 2) return;
+  const range = max - min || 1;
+  const W = 100, H = 28;
+  const pts = valid.map((v,i) => {
+    const x = (i / (valid.length-1)) * W;
+    const y = H - ((v - min) / range) * H;
+    return `${x},${Math.max(2,Math.min(H-2,y))}`;
+  }).join(' ');
+  const el = document.getElementById(svgId);
+  if (el) el.innerHTML = `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+
+async function init() {
+  _user = await ZedAuth.requireAuth(); if (!_user) return;
+  const { data: p } = await ZedProfile.get(_user.id);
+  document.getElementById('sb-name').textContent = ZedProfile.displayName(p, _user).split(' ')[0];
+  await loadLatest();
+  await loadHistory();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Health Tips</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.tips-wrap { padding:1.5rem 1.5rem 3rem; display:flex; flex-direction:column; gap:1.5rem; max-width:960px; }
+
+/* Category bar */
+.cat-bar { display:flex; gap:.5rem; flex-wrap:wrap; }
+.cat-btn {
+  padding:.42rem .95rem; border-radius:99px; cursor:pointer;
+  background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1);
+  font-size:var(--text-sm); color:rgba(255,255,255,.6);
+  transition:all .2s; font-family:'DM Sans',sans-serif;
+  display:flex; align-items:center; gap:.4rem;
+}
+.cat-btn:hover  { border-color:rgba(0,180,166,.3); color:#fff; }
+.cat-btn.active { background:rgba(0,180,166,.12); border-color:var(--teal); color:#fff; font-weight:600; }
+
+/* Tip cards */
+.tips-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.1rem; }
+.tip-card {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-lg); padding:1.3rem;
+  cursor:pointer; transition:all .2s;
+  display:flex; flex-direction:column; gap:.6rem;
+}
+.tip-card:hover { border-color:rgba(0,180,166,.25); transform:translateY(-2px); }
+.tip-card.featured { background:linear-gradient(145deg,rgba(0,180,166,.1),rgba(79,200,224,.04)); border-color:rgba(0,180,166,.22); }
+.tip-ico   { font-size:1.8rem; }
+.tip-cat   { font-size:.65rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--teal-light); opacity:.8; }
+.tip-title { font-family:'Syne',sans-serif; font-size:.95rem; font-weight:700; line-height:1.25; }
+.tip-body  { font-size:var(--text-sm); color:rgba(255,255,255,.6); line-height:1.7; flex:1; }
+.tip-action{ font-size:var(--text-xs); color:var(--teal-light); margin-top:.3rem; font-weight:600; display:flex; align-items:center; gap:.3rem; }
+
+/* Loading card */
+.tip-card.loading .tip-ico,.tip-card.loading .tip-title,.tip-card.loading .tip-body {
+  background:rgba(255,255,255,.07); border-radius:6px;
+  color:transparent; animation:skel-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skel-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Personalization banner */
+.pers-banner {
+  background:linear-gradient(135deg,rgba(0,180,166,.1),rgba(79,200,224,.05));
+  border:1.5px solid rgba(0,180,166,.2); border-radius:var(--radius-xl);
+  padding:1.3rem 1.5rem; display:flex; align-items:center; gap:1.1rem;
+}
+.pers-icon { font-size:2rem; flex-shrink:0; }
+.pers-text h3 { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; margin-bottom:.25rem; }
+.pers-text p  { font-size:var(--text-sm); color:rgba(255,255,255,.5); line-height:1.6; }
+.refresh-btn { margin-left:auto; flex-shrink:0; }
+
+@media(max-width:820px) { .tips-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:500px) { .tips-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item active"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div><div class="topbar-title">💡 Health Tips</div><div class="topbar-sub" id="tips-sub">Personalised health guidance</div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" id="refresh-btn" onclick="generateTips(true)">✨ Refresh Tips</button>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="tips-wrap">
+
+        <!-- Personalisation banner -->
+        <div class="pers-banner anim-1" id="pers-banner">
+          <div class="pers-icon">🧬</div>
+          <div class="pers-text">
+            <h3>Personalised tips loading…</h3>
+            <p>Zed AI generates tips based on your health profile, age, conditions and lifestyle.</p>
+          </div>
+        </div>
+
+        <!-- Category filter -->
+        <div class="cat-bar anim-2">
+          <button class="cat-btn active" onclick="setCategory('all',this)">🌟 All</button>
+          <button class="cat-btn" onclick="setCategory('nutrition',this)">🥗 Nutrition</button>
+          <button class="cat-btn" onclick="setCategory('fitness',this)">🏃 Fitness</button>
+          <button class="cat-btn" onclick="setCategory('mental',this)">🧘 Mental Health</button>
+          <button class="cat-btn" onclick="setCategory('sleep',this)">😴 Sleep</button>
+          <button class="cat-btn" onclick="setCategory('heart',this)">❤️ Heart Health</button>
+          <button class="cat-btn" onclick="setCategory('prevention',this)">🛡️ Prevention</button>
+        </div>
+
+        <!-- Tips grid -->
+        <div class="tips-grid" id="tips-grid">
+          <!-- Skeleton loading -->
+          <div class="tip-card loading"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:70%"></div><div class="tip-body" style="height:60px"></div></div>
+          <div class="tip-card loading" style="opacity:.7"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:60%"></div><div class="tip-body" style="height:60px"></div></div>
+          <div class="tip-card loading" style="opacity:.4"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:65%"></div><div class="tip-body" style="height:60px"></div></div>
+          <div class="tip-card loading" style="opacity:.7"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:55%"></div><div class="tip-body" style="height:60px"></div></div>
+          <div class="tip-card loading" style="opacity:.5"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:72%"></div><div class="tip-body" style="height:60px"></div></div>
+          <div class="tip-card loading" style="opacity:.3"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:58%"></div><div class="tip-body" style="height:60px"></div></div>
+        </div>
+
+      </div>
+      <div class="page-footer">Developed by ACE. Health tips are general wellness guidance and do not constitute medical advice.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+let _user = null, _profile = null;
+let _allTips = [], _category = 'all';
+
+async function init() {
+  _user = await ZedAuth.requireAuth(); if (!_user) return;
+  const { data: p } = await ZedProfile.get(_user.id);
+  _profile = p;
+  document.getElementById('sb-name').textContent = ZedProfile.displayName(p, _user).split(' ')[0];
+
+  updateBanner(p);
+  await generateTips(false);
+}
+
+function updateBanner(p) {
+  const el = document.getElementById('pers-banner');
+  if (p) {
+    const cond = p.conditions && !/^none$/i.test(p.conditions.trim());
+    el.querySelector('.pers-text h3').textContent = `Personalised for ${p.first_name||'you'}`;
+    el.querySelector('.pers-text p').textContent  = `Tips are tailored to age ${p.age||'?'}, ${p.gender||'your profile'}${cond?', '+p.conditions.split(',')[0]:''} and your lifestyle.`;
+    document.getElementById('tips-sub').textContent = `Personalised for ${p.first_name||'you'}`;
+  } else {
+    el.querySelector('.pers-text h3').textContent = 'Complete your profile for better tips';
+    el.querySelector('.pers-text p').innerHTML    = `<a href="edit-profile.html" style="color:var(--teal-light)">Set up your health profile →</a> for AI-tailored recommendations.`;
+  }
+}
+
+async function generateTips(forceRefresh = false) {
+  // Try cache first
+  if (!forceRefresh) {
+    const { data: cached } = await ZedTips.get(_user.id, _category);
+    if (cached && cached.tips && cached.tips.length) {
+      _allTips = cached.tips;
+      renderTips(_allTips);
+      const ago = zedRelTime(cached.generated_at);
+      document.getElementById('refresh-btn').textContent = `✨ Refreshed ${ago}`;
+      return;
+    }
+  }
+
+  // Show loading
+  document.getElementById('tips-grid').innerHTML = Array(6).fill(0).map((_,i)=>`<div class="tip-card loading" style="opacity:${1-i*.15}"><div class="tip-ico">⏳</div><div class="tip-title" style="height:18px;width:65%"></div><div class="tip-body" style="height:60px"></div></div>`).join('');
+  document.getElementById('refresh-btn').textContent = '⏳ Generating…';
+  document.getElementById('refresh-btn').disabled = true;
+
+  const p = _profile || {};
+  const catLabel = { all:'general wellness', nutrition:'nutrition and diet', fitness:'exercise and fitness', mental:'mental health and stress', sleep:'sleep quality', heart:'cardiovascular health', prevention:'disease prevention' }[_category] || 'general wellness';
+
+  const prompt = `You are a health advisor AI. Generate 9 personalised health tips focused on: ${catLabel}
+
+Patient profile: ${p.age?`Age ${p.age}, ${p.gender||'?'}`:'Unknown'}. Conditions: ${p.conditions||'None'}. Medications: ${p.medications||'None'}. Family history: ${p.family_history||'None'}. Lifestyle: Smoking ${p.smoking||'?'}, Alcohol ${p.alcohol||'?'}, Exercise ${p.exercise||'?'}.
+
+Return ONLY valid JSON array (no markdown):
+[
+  {
+    "icon": "emoji",
+    "category": "category name",
+    "title": "Short actionable title",
+    "tip": "2-3 sentence personalised tip explaining the benefit and what to do",
+    "action": "Specific action e.g. Drink 2L of water today",
+    "featured": false
+  }
+]
+Mark the most important 2 tips as "featured": true.`;
+
+  try {
+    const raw = await ZedAI.chat([{ role:'user', content: prompt }], {
+      model: 'claude-sonnet-4-6', max_tokens: 1200
+    });
+    const tips = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    _allTips = tips;
+    renderTips(tips);
+
+    // Cache
+    await ZedTips.save(_user.id, _category, tips);
+    document.getElementById('refresh-btn').textContent = '✨ Refreshed just now';
+  } catch(e) {
+    // Static fallback
+    _allTips = staticTips(p);
+    renderTips(_allTips);
+    document.getElementById('refresh-btn').textContent = '✨ Refresh Tips';
+    zedToast('Using cached tips — ' + e.message, 'warn');
+  }
+  document.getElementById('refresh-btn').disabled = false;
+}
+
+function renderTips(tips) {
+  const grid = document.getElementById('tips-grid');
+  if (!tips || !tips.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No tips available. Click Refresh to generate.</div>';
+    return;
+  }
+  grid.innerHTML = tips.map((t,i) => `
+    <div class="tip-card ${t.featured?'featured':''}" style="animation:fade-up .4s ${i*50}ms both" onclick="tipDetail(${i})">
+      <div class="tip-ico">${t.icon||'💡'}</div>
+      <div class="tip-cat">${t.category||''}</div>
+      <div class="tip-title">${t.title}</div>
+      <div class="tip-body">${t.tip}</div>
+      ${t.action?`<div class="tip-action">▶ ${t.action}</div>`:''}
+    </div>`).join('');
+}
+
+function tipDetail(idx) {
+  const t = _allTips[idx]; if (!t) return;
+  zedToast(`💡 ${t.action || t.title}`, 'info', 4000);
+}
+
+function setCategory(cat, el) {
+  _category = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  generateTips(false);
+}
+
+function staticTips(p) {
+  return [
+    { icon:'💧', category:'Hydration',     featured:true,  title:'Stay Hydrated',      tip:`Drink at least 8 glasses (2L) of water daily. ${p.age>50?'Older adults often under-estimate thirst.':'Dehydration affects energy and focus.'}`, action:'Set a water reminder every 2 hours' },
+    { icon:'🥗', category:'Nutrition',     featured:false, title:'Eat the Rainbow',     tip:'Aim for 5–7 servings of colourful vegetables and fruits daily. Each colour provides different antioxidants.', action:'Add one new vegetable to dinner tonight' },
+    { icon:'🏃', category:'Fitness',       featured:true,  title:'30-Minute Movement',  tip:`${p.exercise&&/daily|3x/i.test(p.exercise)?'Great work on your exercise routine! ':'Even a 30-minute walk '}reduces cardiovascular risk by up to 30% and improves mood.`, action:'Take a 30-minute walk today' },
+    { icon:'😴', category:'Sleep',         featured:false, title:'7–9 Hours of Sleep',  tip:'Quality sleep is essential for cellular repair, immune function and mental health. Maintain a consistent sleep schedule.', action:'Set a sleep alarm for 10:30 PM tonight' },
+    { icon:'🧘', category:'Mental Health', featured:false, title:'Daily Mindfulness',   tip:'Just 10 minutes of mindful breathing daily can reduce cortisol levels and improve cardiovascular health.', action:'Try a 10-minute breathing exercise' },
+    { icon:'🛡️', category:'Prevention',   featured:false, title:'Annual Check-up',     tip:`Regular preventive screenings catch conditions early when they're most treatable. ${p.age>40?'After 40, annual check-ups are especially important.':''}`, action:'Schedule your annual health check' },
+    { icon:'❤️', category:'Heart Health', featured:false, title:'Limit Sodium Intake',  tip:`Keep sodium under 2300mg/day to protect your ${(p.family_history||'').toLowerCase().includes('hypertension')?'heart (especially with your family history)':'blood pressure'}.`, action:'Check sodium on food labels today' },
+    { icon:'🌿', category:'Wellness',      featured:false, title:'Limit Processed Foods', tip:'Ultra-processed foods are linked to increased risk of cardiovascular disease and type 2 diabetes. Cook at home when possible.', action:'Prepare one home-cooked meal today' },
+    { icon:'🩺', category:'Prevention',   featured:false, title:'Know Your Numbers',    tip:'Regularly track blood pressure, cholesterol and blood glucose. Early detection enables early action.', action:'Log your vitals in Zed today' },
+  ];
+}
+
+init();
+</script>
+</body>
+</html>

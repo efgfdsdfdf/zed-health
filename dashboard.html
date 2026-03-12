@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+/* ════════════════════════════════════════════════
+   DASHBOARD LAYOUT
+   ════════════════════════════════════════════════ */
+.dash-wrap { padding:1.8rem 2rem 3rem; display:flex; flex-direction:column; gap:1.75rem; max-width:1200px; }
+
+/* ── Banner ───────────────────────────────────── */
+.banner {
+  background:linear-gradient(135deg,rgba(0,180,166,.12),rgba(79,200,224,.06));
+  border:1.5px solid rgba(0,180,166,.22); border-radius:20px;
+  padding:1.75rem 2rem; display:flex; align-items:center; gap:1.5rem;
+  position:relative; overflow:hidden;
+}
+.banner::after { content:'⚕️'; position:absolute; right:1.8rem; top:50%; transform:translateY(-50%); font-size:6rem; opacity:.05; pointer-events:none; }
+.banner-text { flex:1; min-width:0; }
+.banner-text h2 { font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800; letter-spacing:-.03em; margin-bottom:.45rem; line-height:1.25; }
+.banner-text p  { font-size:var(--text-base); color:rgba(255,255,255,.55); line-height:1.65; }
+.banner-score   { flex-shrink:0; text-align:center; }
+.score-ring     { width:88px; height:88px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto .5rem; }
+.score-inner    { width:68px; height:68px; border-radius:50%; background:var(--panel); display:flex; align-items:center; justify-content:center; flex-direction:column; }
+.score-num      { font-family:'Syne',sans-serif; font-size:1.35rem; font-weight:800; color:var(--teal-light); line-height:1; }
+.score-lbl      { font-size:.6rem; color:rgba(255,255,255,.38); letter-spacing:.05em; text-transform:uppercase; margin-top:.12rem; }
+.score-caption  { font-size:var(--text-xs); color:rgba(255,255,255,.4); }
+
+/* ── Section head ─────────────────────────────── */
+.sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.1rem; }
+.sec-head-title { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; display:flex; align-items:center; gap:.5rem; }
+.sec-head-link  { font-size:var(--text-xs); color:var(--teal-light); cursor:pointer; text-decoration:none; font-weight:500; }
+.sec-head-link:hover { text-decoration:underline; }
+
+/* ── Vitals grid ──────────────────────────────── */
+.vitals-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1.1rem; }
+.vital-card {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius-lg); padding:1.4rem;
+  display:flex; flex-direction:column; gap:.2rem;
+  transition:transform .2s, border-color .2s; cursor:default;
+}
+.vital-card:hover { transform:translateY(-3px); border-color:rgba(0,180,166,.22); }
+.vital-top  { display:flex; align-items:center; justify-content:space-between; margin-bottom:.7rem; }
+.vital-ico  { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+.vstatus    { width:10px; height:10px; border-radius:50%; }
+.vstatus.ok   { background:var(--success); box-shadow:0 0 7px rgba(0,212,160,.55); }
+.vstatus.warn { background:var(--warn);    box-shadow:0 0 7px rgba(255,170,68,.55); animation:vblink 2s infinite; }
+.vstatus.high { background:var(--error);   box-shadow:0 0 7px rgba(255,92,122,.55); animation:vblink .8s infinite; }
+@keyframes vblink{0%,100%{opacity:1}50%{opacity:.25}}
+.vital-val  { font-family:'Syne',sans-serif; font-size:1.9rem; font-weight:800; line-height:1; letter-spacing:-.03em; }
+.vital-unit { font-size:var(--text-xs); color:rgba(255,255,255,.45); margin-top:.06rem; }
+.vital-name { font-size:var(--text-sm); color:rgba(255,255,255,.6); margin-top:.3rem; font-weight:500; }
+.vital-trend{ font-size:var(--text-xs); margin-top:.2rem; font-weight:600; }
+.vt-up      { color:var(--success); }
+.vt-warn    { color:var(--warn); }
+.vt-high    { color:var(--error); }
+.sparkline-wrap { margin-top:.8rem; height:32px; }
+.sparkline-wrap svg { width:100%; height:100%; }
+
+/* ── Two-col ──────────────────────────────────── */
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.3rem; }
+
+/* ── AI Insight ───────────────────────────────── */
+.ai-card {
+  background:linear-gradient(145deg,rgba(0,180,166,.1),rgba(79,200,224,.04));
+  border:1.5px solid rgba(0,180,166,.22); border-radius:var(--radius-lg); padding:1.5rem;
+  display:flex; flex-direction:column; gap:1.1rem;
+}
+.ai-head { display:flex; align-items:center; gap:.85rem; }
+.ai-ava  { width:44px; height:44px; border-radius:13px; background:rgba(0,180,166,.15); border:1.5px solid rgba(0,180,166,.28); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+.ai-badge{ display:inline-flex; align-items:center; gap:.35rem; font-size:var(--text-xs); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--teal-light); opacity:.85; }
+.ai-text { font-size:var(--text-base); line-height:1.75; color:rgba(255,255,255,.8); }
+.ai-actions { display:flex; flex-wrap:wrap; gap:.6rem; }
+.ai-action { padding:.35rem .9rem; border-radius:99px; background:rgba(0,180,166,.1); border:1.5px solid rgba(0,180,166,.22); font-size:var(--text-sm); color:var(--teal-light); cursor:pointer; text-decoration:none; transition:all .18s; font-weight:500; }
+.ai-action:hover { background:rgba(0,180,166,.22); }
+
+/* ── Quick actions ────────────────────────────── */
+.quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
+.quick-btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.5rem;
+  padding:1.1rem .7rem; border-radius:var(--radius-md);
+  background:rgba(255,255,255,.05); border:1.5px solid var(--border);
+  text-decoration:none; color:#fff; transition:all .2s; cursor:pointer;
+}
+.quick-btn:hover { background:rgba(0,180,166,.09); border-color:rgba(0,180,166,.28); transform:translateY(-2px); }
+.quick-ico { font-size:1.6rem; }
+.quick-lbl { font-size:var(--text-sm); font-weight:500; color:rgba(255,255,255,.7); text-align:center; line-height:1.3; }
+
+/* ── Three-col ────────────────────────────────── */
+.three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.3rem; }
+
+/* ── Medications ──────────────────────────────── */
+.med-item { display:flex; align-items:center; gap:.9rem; padding:.7rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.med-item:last-of-type { border-bottom:none; }
+.med-dot  { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.med-info { flex:1; min-width:0; }
+.med-name { font-size:var(--text-sm); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.med-dose { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-top:.07rem; }
+.med-check { width:26px; height:26px; border-radius:8px; border:1.5px solid rgba(255,255,255,.18); background:transparent; cursor:pointer; transition:all .2s; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.8rem; }
+.med-check.done { background:rgba(0,212,160,.15); border-color:var(--success); color:var(--success); }
+.med-progress { margin-top:1rem; }
+.med-prog-bar { height:5px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; margin-bottom:.4rem; }
+.med-prog-fill{ height:100%; background:linear-gradient(90deg,var(--teal),var(--sky)); border-radius:99px; transition:width .4s ease; }
+.med-prog-lbl { font-size:var(--text-xs); color:rgba(255,255,255,.38); }
+
+/* ── Appointments ─────────────────────────────── */
+.appt-item { display:flex; align-items:center; gap:1rem; padding:.75rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.appt-item:last-child { border-bottom:none; }
+.appt-date { width:46px; flex-shrink:0; text-align:center; background:rgba(255,255,255,.06); border-radius:11px; padding:.45rem .3rem; }
+.appt-date .mo { font-size:.6rem; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.4); }
+.appt-date .dy { font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; line-height:1; }
+.appt-info { flex:1; min-width:0; }
+.appt-name { font-size:var(--text-sm); font-weight:600; }
+.appt-type { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-top:.12rem; }
+.appt-pill { padding:.2rem .6rem; border-radius:99px; font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+.appt-pill.ok  { background:rgba(0,212,160,.12); color:var(--success); }
+.appt-pill.pnd { background:rgba(255,170,68,.12); color:var(--warn); }
+
+/* ── Activity ─────────────────────────────────── */
+.act-item { display:flex; align-items:center; gap:.85rem; padding:.65rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.act-item:last-child { border-bottom:none; }
+.act-ico  { width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:.95rem; flex-shrink:0; }
+.act-body { flex:1; min-width:0; }
+.act-desc { font-size:var(--text-sm); color:rgba(255,255,255,.75); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.act-time { font-size:var(--text-xs); color:rgba(255,255,255,.3); margin-top:.1rem; }
+
+/* ── Tips ─────────────────────────────────────── */
+.tips-row { display:grid; grid-template-columns:repeat(3,1fr); gap:1.1rem; }
+.tip-card { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius-md); padding:1.2rem; cursor:pointer; transition:all .2s; display:flex; gap:.9rem; align-items:flex-start; }
+.tip-card:hover { border-color:rgba(0,180,166,.28); transform:translateY(-2px); }
+.tip-ico  { font-size:1.5rem; flex-shrink:0; margin-top:.08rem; }
+.tip-title{ font-family:'Syne',sans-serif; font-size:var(--text-sm); font-weight:700; margin-bottom:.35rem; }
+.tip-body p { font-size:var(--text-sm); color:rgba(255,255,255,.52); line-height:1.6; }
+
+/* ── Topbar extras ────────────────────────────── */
+.tb-greeting .name { font-family:'Syne',sans-serif; font-size:1.05rem; font-weight:800; letter-spacing:-.02em; }
+.tb-greeting .sub  { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-top:.05rem; }
+.notif-wrap { position:relative; }
+.notif-pip  { position:absolute; top:5px; right:5px; width:8px; height:8px; border-radius:50%; background:var(--error); border:2px solid var(--ink); }
+
+/* ════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════ */
+@media(max-width:1100px) {
+  .vitals-grid { grid-template-columns:repeat(2,1fr); }
+  .three-col   { grid-template-columns:1fr 1fr; }
+  .three-col > :last-child { grid-column:span 2; }
+}
+@media(max-width:768px) {
+  .dash-wrap   { padding:1.2rem 1rem 2.5rem; gap:1.4rem; }
+  .two-col     { grid-template-columns:1fr; }
+  .three-col   { grid-template-columns:1fr; }
+  .three-col > :last-child { grid-column:span 1; }
+  .tips-row    { grid-template-columns:1fr; }
+  .vitals-grid { grid-template-columns:1fr 1fr; }
+  .banner      { flex-direction:column; align-items:flex-start; gap:1.2rem; }
+  .banner::after { display:none; }
+  .banner-text h2 { font-size:1.25rem; }
+}
+@media(max-width:480px) {
+  .vitals-grid { grid-template-columns:1fr 1fr; gap:.75rem; }
+  .vital-val   { font-size:1.55rem; }
+  .quick-grid  { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <a href="index.html" class="logo">Zed</a>
+      <span class="logo-badge">Pro</span>
+    </div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av" id="sb-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub" id="sb-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section">
+        <div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item active"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html"   class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Find Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button>
+      <button onclick="ZedAuth.signOut()" style="width:100%;margin-top:.6rem;padding:.62rem;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;color:rgba(255,255,255,.38);font-size:var(--text-xs);cursor:pointer;transition:color .18s" onmouseover="this.style.color='rgba(255,255,255,.75)'" onmouseout="this.style.color='rgba(255,255,255,.38)'">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+      
+      </div>
+      <div class="topbar-right">
+        <div class="notif-wrap">
+          <div class="icon-btn" title="Notifications" id="notif-btn">🔔</div>
+          <span class="notif-pip" id="notif-pip" style="display:none"></span>
+        </div>
+        <a href="vitals.html"  class="btn btn-ghost btn-sm">❤️ Log Vitals</a>
+        <a href="chat.html"    class="btn btn-primary btn-sm">🤖 Ask AI</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="dash-wrap">
+
+        <!-- ── BANNER ──────────────────────── -->
+        <div class="banner anim-1">
+            <div class="tb-greeting">
+          <div class="name" id="greeting">Dashboard</div>
+          <div class="sub"  id="topbar-date">Loading…</div>
+        </div>
+          <div class="banner-text">
+            <h2 id="banner-title">Loading your health summary…</h2>
+            <p   id="banner-sub">Fetching your data</p>
+          </div>
+          <div class="banner-score">
+            <div class="score-ring" id="score-ring" style="background:conic-gradient(rgba(0,180,166,.4) 0% 50%,rgba(255,255,255,.07) 50% 100%)">
+              <div class="score-inner">
+                <div class="score-num" id="score-val">—</div>
+                <div class="score-lbl">Score</div>
+              </div>
+            </div>
+            <div class="score-caption">Health score</div>
+          </div>
+        </div>
+
+        <!-- ── VITALS ──────────────────────── -->
+        <div class="anim-2">
+          <div class="sec-head">
+            <div class="sec-head-title">📈 Today's Vitals</div>
+            <a href="vitals.html" class="sec-head-link">Log new reading →</a>
+          </div>
+          <div class="vitals-grid" id="vitals-grid">
+            <!-- Populated by JS -->
+            <div class="vital-card"><div class="vital-top"><div class="vital-ico" style="background:rgba(255,92,122,.12)">❤️</div><div class="vstatus ok"></div></div><div class="vital-val" id="v-hr">—</div><div class="vital-unit">bpm</div><div class="vital-name">Heart Rate</div><div class="vital-trend" id="t-hr"></div><div class="sparkline-wrap"><svg viewBox="0 0 100 32" preserveAspectRatio="none"><polyline id="sp-hr" points="0,16 100,16" fill="none" stroke="rgba(255,92,122,.4)" stroke-width="2"/></svg></div></div>
+            <div class="vital-card"><div class="vital-top"><div class="vital-ico" style="background:rgba(79,200,224,.12)">🩸</div><div class="vstatus ok" id="st-bp"></div></div><div class="vital-val" id="v-bp" style="font-size:1.4rem">—</div><div class="vital-unit">mmHg</div><div class="vital-name">Blood Pressure</div><div class="vital-trend" id="t-bp"></div><div class="sparkline-wrap"><svg viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="0,14 20,12 40,15 60,11 80,13 100,10" fill="none" stroke="rgba(79,200,224,.4)" stroke-width="2"/></svg></div></div>
+            <div class="vital-card"><div class="vital-top"><div class="vital-ico" style="background:rgba(255,170,68,.12)">🌡️</div><div class="vstatus ok" id="st-temp"></div></div><div class="vital-val" id="v-temp">—</div><div class="vital-unit">°F</div><div class="vital-name">Temperature</div><div class="vital-trend" id="t-temp"></div><div class="sparkline-wrap"><svg viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="0,20 20,18 40,16 60,12 80,10 100,8" fill="none" stroke="rgba(255,170,68,.4)" stroke-width="2"/></svg></div></div>
+            <div class="vital-card"><div class="vital-top"><div class="vital-ico" style="background:rgba(0,180,166,.12)">💧</div><div class="vstatus ok" id="st-spo2"></div></div><div class="vital-val" id="v-spo2">—</div><div class="vital-unit">SpO₂ %</div><div class="vital-name">Oxygen Saturation</div><div class="vital-trend" id="t-spo2"></div><div class="sparkline-wrap"><svg viewBox="0 0 100 32" preserveAspectRatio="none"><polyline points="0,14 20,16 40,12 60,14 80,10 100,12" fill="none" stroke="rgba(0,180,166,.4)" stroke-width="2"/></svg></div></div>
+          </div>
+        </div>
+
+        <!-- ── AI INSIGHT + QUICK ACTIONS ──── -->
+        <div class="two-col anim-3">
+          <div class="ai-card">
+            <div class="ai-head">
+              <div class="ai-ava">⚕</div>
+              <div>
+                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1rem">Zed AI Insight</div>
+                <div class="ai-badge"><span class="ai-dot"></span>Live analysis</div>
+              </div>
+            </div>
+            <div class="ai-text" id="ai-insight">
+              <span class="skel" style="display:block;height:14px;width:92%;margin-bottom:.6rem"></span>
+              <span class="skel" style="display:block;height:14px;width:78%;margin-bottom:.6rem"></span>
+              <span class="skel" style="display:block;height:14px;width:84%"></span>
+            </div>
+            <div class="ai-actions" id="ai-actions" style="display:none">
+              <a href="chat.html"     class="ai-action">💬 Ask AI</a>
+              <a href="vitals.html"   class="ai-action">❤️ Log Vitals</a>
+              <a href="symptoms.html" class="ai-action">🔬 Symptoms</a>
+              <a href="tips.html"     class="ai-action">💡 Tips</a>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="sec-head" style="margin-bottom:.9rem">
+              <div class="sec-head-title">⚡ Quick Actions</div>
+            </div>
+            <div class="quick-grid">
+              <a href="chat.html"      class="quick-btn"><span class="quick-ico">🤖</span><span class="quick-lbl">AI Chat</span></a>
+              <a href="vitals.html"    class="quick-btn"><span class="quick-ico">❤️</span><span class="quick-lbl">Log Vitals</span></a>
+              <a href="symptoms.html"  class="quick-btn"><span class="quick-ico">🔬</span><span class="quick-lbl">Symptoms</span></a>
+              <a href="report.html"    class="quick-btn"><span class="quick-ico">📋</span><span class="quick-lbl">Reports</span></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MEDS + APPOINTMENTS + ACTIVITY ── -->
+        <div class="three-col anim-4">
+
+          <div class="card">
+            <div class="sec-head" style="margin-bottom:.85rem">
+              <div class="sec-head-title">💊 Medications</div>
+              <a href="edit-profile.html" class="sec-head-link">Manage →</a>
+            </div>
+            <div id="med-list">
+              <div class="skel" style="height:13px;width:72%;margin-bottom:.9rem"></div>
+              <div class="skel" style="height:13px;width:58%;margin-bottom:.9rem"></div>
+              <div class="skel" style="height:13px;width:65%"></div>
+            </div>
+            <div class="med-progress">
+              <div class="med-prog-bar"><div class="med-prog-fill" id="med-fill" style="width:0%"></div></div>
+              <div class="med-prog-lbl" id="med-lbl">— of — taken today</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="sec-head" style="margin-bottom:.85rem">
+              <div class="sec-head-title">📅 Appointments</div>
+              <span class="sec-head-link" id="appt-head-link">View all →</span>
+            </div>
+            <div id="appt-list">
+              <div class="skel" style="height:13px;width:80%;margin-bottom:.9rem"></div>
+              <div class="skel" style="height:13px;width:65%;margin-bottom:.9rem"></div>
+              <div class="skel" style="height:13px;width:72%"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="sec-head" style="margin-bottom:.85rem">
+              <div class="sec-head-title">🕒 Recent Activity</div>
+            </div>
+            <div id="act-list">
+              <div class="skel" style="height:12px;width:85%;margin-bottom:.85rem"></div>
+              <div class="skel" style="height:12px;width:70%;margin-bottom:.85rem"></div>
+              <div class="skel" style="height:12px;width:78%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── TIPS ──────────────────────────── -->
+        <div class="anim-4">
+          <div class="sec-head">
+            <div class="sec-head-title">💡 Today's Health Tips <span id="tips-for" style="font-size:var(--text-xs);font-weight:400;color:rgba(255,255,255,.35);margin-left:.4rem"></span></div>
+            <a href="tips.html" class="sec-head-link">See all →</a>
+          </div>
+          <div class="tips-row" id="tips-row">
+            <div class="tip-card"><div class="tip-ico">⏳</div><div style="flex:1"><div class="tip-title"><span class="skel" style="display:inline-block;height:14px;width:130px"></span></div><p><span class="skel" style="display:block;height:11px;width:95%;margin-bottom:.45rem"></span><span class="skel" style="display:block;height:11px;width:78%"></span></p></div></div>
+            <div class="tip-card" style="opacity:.6"><div class="tip-ico">⏳</div><div style="flex:1"><div class="tip-title"><span class="skel" style="display:inline-block;height:14px;width:110px"></span></div><p><span class="skel" style="display:block;height:11px;width:88%;margin-bottom:.45rem"></span><span class="skel" style="display:block;height:11px;width:72%"></span></p></div></div>
+            <div class="tip-card" style="opacity:.3"><div class="tip-ico">⏳</div><div style="flex:1"><div class="tip-title"><span class="skel" style="display:inline-block;height:14px;width:120px"></span></div><p><span class="skel" style="display:block;height:11px;width:82%;margin-bottom:.45rem"></span><span class="skel" style="display:block;height:11px;width:68%"></span></p></div></div>
+          </div>
+        </div>
+
+      </div><!-- /dash-wrap -->
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+
+// ── Date / greeting ─────────────────────────────────────────
+(function(){
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const now=new Date(), h=now.getHours();
+  window._gw = h<12?'morning':h<17?'afternoon':'evening';
+  document.getElementById('topbar-date').textContent=`${DAYS[now.getDay()]}, ${MONS[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+})();
+
+let _medTotal=0, _medDone=0;
+const MED_COLORS=['#00b4a6','#4fc8e0','#ffaa44','#ff5c7a','#a78bfa'];
+
+// ── Render vitals from Supabase vitals_log ───────────────────
+function renderVitals(v) {
+  if (!v) {
+    // No vitals on record — show placeholder with link
+    ['v-hr','v-bp','v-temp','v-spo2'].forEach(id => document.getElementById(id).textContent='—');
+    ['t-hr','t-bp','t-temp','t-spo2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.innerHTML='<a href="vitals.html" style="color:var(--teal-light);font-size:var(--text-xs)">Log reading →</a>'; }
+    });
+    return;
+  }
+
+  // Heart Rate
+  if (v.heart_rate) {
+    document.getElementById('v-hr').textContent = v.heart_rate;
+    const ok = v.heart_rate>=60&&v.heart_rate<=100;
+    const warn = v.heart_rate>100||v.heart_rate<60;
+    document.getElementById('t-hr').textContent = ok ? '↑ Normal' : warn ? '⚠ Out of range' : '✓ Normal';
+    document.getElementById('t-hr').className = 'vital-trend '+(ok?'vt-up':'vt-warn');
+  }
+
+  // BP
+  if (v.bp_systolic && v.bp_diastolic) {
+    document.getElementById('v-bp').textContent = `${v.bp_systolic}/${v.bp_diastolic}`;
+    const ok = v.bp_systolic<130&&v.bp_diastolic<85;
+    const high = v.bp_systolic>=140||v.bp_diastolic>=90;
+    const st = document.getElementById('st-bp');
+    if (st) { st.className='vstatus '+(high?'high':ok?'ok':'warn'); }
+    document.getElementById('t-bp').textContent = high?'↑ Elevated':ok?'↑ Optimal':'↕ Borderline';
+    document.getElementById('t-bp').className = 'vital-trend '+(high?'vt-high':ok?'vt-up':'vt-warn');
+  }
+
+  // Temperature
+  if (v.temperature) {
+    document.getElementById('v-temp').textContent = parseFloat(v.temperature).toFixed(1);
+    const ok = v.temperature>=97&&v.temperature<=99;
+    const warn = v.temperature>99;
+    const st = document.getElementById('st-temp');
+    if (st) { st.className='vstatus '+(warn?'warn':'ok'); }
+    document.getElementById('t-temp').textContent = warn?'⚠ Elevated':ok?'✓ Normal':'↓ Low';
+    document.getElementById('t-temp').className = 'vital-trend '+(warn?'vt-warn':'vt-up');
+  }
+
+  // SpO2
+  if (v.spo2) {
+    document.getElementById('v-spo2').textContent = v.spo2;
+    const ok = v.spo2>=95;
+    const low = v.spo2<92;
+    const st = document.getElementById('st-spo2');
+    if (st) { st.className='vstatus '+(low?'high':ok?'ok':'warn'); }
+    document.getElementById('t-spo2').textContent = low?'⚠ Critical':ok?'↑ Excellent':'↕ Low normal';
+    document.getElementById('t-spo2').className = 'vital-trend '+(low?'vt-high':ok?'vt-up':'vt-warn');
+  }
+}
+
+// ── Medications ──────────────────────────────────────────────
+function renderMeds(txt) {
+  const list = document.getElementById('med-list');
+  if (!txt||/^none$/i.test(txt.trim())||!txt.trim()) {
+    list.innerHTML=`<div class="empty-state">No medications on record.<br><a href="edit-profile.html">Add medications →</a></div>`;
+    document.getElementById('med-lbl').textContent='No medications'; return;
+  }
+  const meds=txt.split(/[,\n]/).map(m=>m.trim()).filter(Boolean).slice(0,5);
+  _medTotal=meds.length; _medDone=0;
+  list.innerHTML=meds.map((m,i)=>{
+    const name=m.split('(')[0].trim();
+    const dose=(m.match(/\(([^)]+)\)/)||['',''])[1];
+    return `<div class="med-item">
+      <div class="med-dot" style="background:${MED_COLORS[i%MED_COLORS.length]}"></div>
+      <div class="med-info"><div class="med-name">${name}</div>${dose?`<div class="med-dose">${dose}</div>`:''}</div>
+      <div class="med-check" onclick="toggleMed(this)" title="Mark taken"></div>
+    </div>`;
+  }).join('');
+  updateMedBar();
+}
+
+function toggleMed(el) {
+  const was=el.classList.contains('done');
+  el.classList.toggle('done'); el.textContent=el.classList.contains('done')?'✓':'';
+  _medDone+=was?-1:1;
+  if(!was) zedToast('Medication marked as taken ✓','success');
+  updateMedBar();
+}
+function updateMedBar() {
+  document.getElementById('med-fill').style.width=_medTotal?`${(_medDone/_medTotal)*100}%`:'0%';
+  document.getElementById('med-lbl').textContent=`${_medDone} of ${_medTotal} taken today`;
+}
+
+// ── Appointments ──────────────────────────────────────────────
+function renderAppointments(appts) {
+  const list = document.getElementById('appt-list');
+  if (!appts||!appts.length) {
+    list.innerHTML=`<div class="empty-state">No upcoming appointments.<br><span style="color:var(--teal-light);cursor:pointer" onclick="zedToast('Appointment booking coming soon','info')">Schedule one →</span></div>`;
+    return;
+  }
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  list.innerHTML=appts.map(a=>{
+    const d=new Date(a.appointment_at);
+    const pill=a.status==='confirmed'?'ok':'pnd';
+    return `<div class="appt-item">
+      <div class="appt-date"><div class="mo">${MONTHS[d.getMonth()]}</div><div class="dy">${d.getDate()}</div></div>
+      <div class="appt-info"><div class="appt-name">${a.doctor_name||'Appointment'}</div><div class="appt-type">${a.specialty||''} · ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>
+      <span class="appt-pill ${pill}">${a.status}</span>
+    </div>`;
+  }).join('');
+}
+
+// Static fallback appointments
+function renderStaticAppts() {
+  document.getElementById('appt-list').innerHTML=`
+    <div class="appt-item"><div class="appt-date"><div class="mo">MAR</div><div class="dy">11</div></div><div class="appt-info"><div class="appt-name">Dr. Sarah Okafor</div><div class="appt-type">General Practice · 10:00 AM</div></div><span class="appt-pill ok">Confirmed</span></div>
+    <div class="appt-item"><div class="appt-date"><div class="mo">MAR</div><div class="dy">18</div></div><div class="appt-info"><div class="appt-name">Dr. James Patel</div><div class="appt-type">Cardiology · 2:30 PM</div></div><span class="appt-pill pnd">Pending</span></div>
+    <div class="appt-item"><div class="appt-date"><div class="mo">APR</div><div class="dy">02</div></div><div class="appt-info"><div class="appt-name">Annual Blood Panel</div><div class="appt-type">Lab Test · 8:00 AM</div></div><span class="appt-pill ok">Confirmed</span></div>`;
+}
+
+// ── Activity feed ─────────────────────────────────────────────
+function renderActivity(chats,syms,reps) {
+  const items=[
+    ...(chats||[]).map(c=>({ico:'🤖',desc:`AI Chat — ${c.title||'Consultation'}`,time:c.updated_at||c.created_at})),
+    ...(syms||[]).map(s=>({ico:'🔬',desc:`Symptom check — ${s.area||'General'}`,time:s.created_at})),
+    ...(reps||[]).map(r=>({ico:'📋',desc:`Report — ${r.file_name||'Analyzed'}`,time:r.analyzed_at})),
+  ].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,5);
+
+  const el=document.getElementById('act-list');
+  if(!items.length){el.innerHTML=`<div class="empty-state">No recent activity.<br><a href="chat.html">Start a consultation →</a></div>`;return;}
+  el.innerHTML=items.map(i=>`<div class="act-item"><div class="act-ico">${i.ico}</div><div class="act-body"><div class="act-desc">${i.desc}</div><div class="act-time">${zedRelTime(i.time)}</div></div></div>`).join('');
+}
+
+// ── Tips ──────────────────────────────────────────────────────
+function renderTips(cached, profile) {
+  const row=document.getElementById('tips-row');
+  if(cached&&cached.length&&cached[0].tips&&cached[0].tips.length){
+    row.innerHTML=cached[0].tips.slice(0,3).map(t=>`<div class="tip-card" onclick="location.href='tips.html'"><div class="tip-ico">${t.icon||'💡'}</div><div class="tip-body"><div class="tip-title">${t.title}</div><p>${t.tip}</p></div></div>`).join(''); return;
+  }
+  const p=profile||{};
+  const tips=[
+    {ico:'💧',title:'Stay Hydrated',body:p.age>40?'Adults over 40 need 2.5L+ daily. Subtle dehydration impairs focus and kidney function.':'Drink 8–10 glasses of water daily for energy, focus, and skin health.'},
+    {ico:'🥗',title:'Nutrition Focus'  ,body:(p.family_history||'').toLowerCase().includes('diabetes')?'Given your family history of diabetes, limit refined carbs and track sugar intake.':'Aim for 5 portions of vegetables and 2 of fruit daily — variety is key.'},
+    {ico:'🧘',title:'Mental Wellbeing',body:(p.family_history||'').toLowerCase().includes('hypertension')?'10 minutes of daily breathing exercises can meaningfully lower blood pressure.':'Regular mindfulness practice reduces cortisol and improves cardiovascular health.'}
+  ];
+  row.innerHTML=tips.map(t=>`<div class="tip-card" onclick="location.href='tips.html'"><div class="tip-ico">${t.ico}</div><div class="tip-body"><div class="tip-title">${t.title}</div><p>${t.body}</p></div></div>`).join('');
+}
+
+// ── AI Insight ────────────────────────────────────────────────
+async function loadInsight(profile, vitals) {
+  const el  = document.getElementById('ai-insight');
+  const act = document.getElementById('ai-actions');
+  const vitalsStr = vitals ? [
+    vitals.heart_rate    ? `HR ${vitals.heart_rate}bpm`    : '',
+    vitals.bp_systolic   ? `BP ${vitals.bp_systolic}/${vitals.bp_diastolic}mmHg` : '',
+    vitals.temperature   ? `Temp ${vitals.temperature}°F`  : '',
+    vitals.spo2          ? `SpO₂ ${vitals.spo2}%`         : ''
+  ].filter(Boolean).join(', ') : 'No vitals on record today';
+
+  try {
+    const text = await ZedAI.chat([{
+      role:'user',
+      content:`Write a 2–3 sentence personalised health insight for this patient. End with one specific actionable step. Be warm and concise.\n\nPatient: ${ZedProfile.displayName(profile,null)}, Age ${profile?.age||'?'}, ${profile?.gender||'?'}\nConditions: ${profile?.conditions||'None'} | Meds: ${profile?.medications||'None'}\nFamily history: ${profile?.family_history||'None'}\nLifestyle: Smoking ${profile?.smoking||'?'}, Exercise ${profile?.exercise||'?'}\nVitals today: ${vitalsStr}\n\nOnly write the insight text — no labels, no preamble, no markdown.`
+    }], { model:'claude-haiku-4-5-20251001', max_tokens:160 });
+    if (text) { el.textContent=text; act.style.display='flex'; }
+  } catch {
+    // Fallback static insight
+    el.textContent=`Your health data is being monitored by Zed. ${vitals?'Your vitals were logged today — keep up the good habit.':'Log your vitals today to get a personalised AI analysis.'} Consistency is the foundation of long-term health.`;
+    act.style.display='flex';
+  }
+}
+
+// ── MAIN INIT ──────────────────────────────────────────────────
+async function init() {
+  const user = await ZedAuth.requireAuth();
+  if (!user) return;
+
+  // Greeting
+  const firstName = user.user_metadata?.first_name || user.email?.split('@')[0] || 'there';
+  document.getElementById('greeting').textContent = `Good ${window._gw}, ${firstName} 👋`;
+
+  // Profile
+  const { data:profile } = await ZedProfile.get(user.id);
+
+  if (!profile) {
+    document.getElementById('banner-title').textContent='Welcome to Zed! Set up your profile 👋';
+    document.getElementById('banner-sub').textContent='Complete your health profile to unlock AI insights and personalised analysis.';
+    document.getElementById('score-val').textContent='—';
+    document.getElementById('med-list').innerHTML=`<a href="edit-profile.html" class="btn btn-primary btn-full" style="margin-top:.3rem">Complete Profile →</a>`;
+    renderStaticAppts();
+    renderActivity([],[],[]);
+    document.getElementById('tips-row').innerHTML=`<div class="tip-card"><div class="tip-ico">👤</div><div class="tip-body"><div class="tip-title">Complete your profile</div><p>Add your health data to receive personalised tips and AI insights tailored to you.</p></div></div>`;
+    document.getElementById('ai-insight').textContent='Set up your health profile to get personalised daily insights from Zed AI.';
+    document.getElementById('ai-actions').style.display='flex';
+    return;
+  }
+
+  // Sidebar
+  document.getElementById('sb-name').textContent = profile.first_name || firstName;
+  document.getElementById('sb-sub').textContent  = profile.blood_group ? `🩸 ${profile.blood_group} · Premium` : '✦ Premium';
+
+  // Banner
+  const meds = profile.medications&&!/^none$/i.test(profile.medications.trim());
+  const cond = profile.conditions &&!/^none$/i.test(profile.conditions.trim());
+  document.getElementById('banner-title').textContent = `${profile.first_name||firstName}'s health summary — ${new Date().toLocaleDateString(undefined,{month:'long',day:'numeric'})}`;
+  document.getElementById('banner-sub').textContent   = [meds&&'Medications tracked.',cond&&'Conditions monitored.','Vitals monitoring active.'].filter(Boolean).join(' ');
+  document.getElementById('tips-for').textContent     = `for ${profile.first_name||firstName}`;
+
+  // Health score
+  const score = zedHealthScore(profile);
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('score-ring').style.background = `conic-gradient(var(--teal) 0% ${score}%, rgba(255,255,255,.07) ${score}% 100%)`;
+
+  // Meds
+  renderMeds(profile.medications);
+
+  // Parallel fetches
+  const [chatR,sympR,repR,tipR,apptR,vitalR] = await Promise.allSettled([
+    _supabase.from('chat_sessions')  .select('id,title,created_at,updated_at').eq('user_id',user.id).order('updated_at',{ascending:false}).limit(3),
+    _supabase.from('symptom_checks') .select('area,created_at')               .eq('user_id',user.id).order('created_at', {ascending:false}).limit(3),
+    _supabase.from('medical_reports').select('file_name,analyzed_at')          .eq('user_id',user.id).order('analyzed_at',{ascending:false}).limit(3),
+    _supabase.from('health_tips')    .select('tips')                           .eq('user_id',user.id).eq('category','all').limit(1),
+    ZedAppointments.upcoming(user.id, 3),
+    ZedVitals.latest(user.id)
+  ]);
+
+  // Activity
+  renderActivity(
+    chatR.status==='fulfilled'?chatR.value.data:[],
+    sympR.status==='fulfilled'?sympR.value.data:[],
+    repR.status ==='fulfilled'?repR.value.data :[]
+  );
+
+  // Tips
+  renderTips(tipR.status==='fulfilled'?tipR.value.data:null, profile);
+
+  // Appointments — real data or fallback
+  const appts = apptR.status==='fulfilled' ? apptR.value.data : null;
+  if (appts&&appts.length) renderAppointments(appts);
+  else renderStaticAppts();
+
+  // Vitals — real data from vitals_log
+  const latestVitals = vitalR.status==='fulfilled' ? vitalR.value.data : null;
+  renderVitals(latestVitals);
+
+  // Notifications badge
+  const unread = await ZedNotifications.unreadCount(user.id).catch(()=>0);
+  if (unread>0) document.getElementById('notif-pip').style.display='block';
+
+  // AI Insight (deferred)
+  setTimeout(()=>loadInsight(profile, latestVitals), 500);
+}
+
+init();
+</script>
+</body>
+</html>

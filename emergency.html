@@ -1,0 +1,171 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Emergency Guide</title><link rel="stylesheet" href="zed.css"/>
+<style>
+.emg-wrap{padding:1.2rem;display:flex;flex-direction:column;gap:1.1rem;}
+.emergency-banner{background:linear-gradient(135deg,rgba(255,92,122,.15),rgba(255,92,122,.06));border:1px solid rgba(255,92,122,.3);border-radius:16px;padding:1.2rem;display:flex;align-items:center;gap:1rem;}
+.emg-icon-big{font-size:2.2rem;flex-shrink:0;}
+.emg-banner-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--error);margin-bottom:.3rem;}
+.emg-banner-sub{font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.5;}
+.call-btns{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+.call-btn{padding:1rem;border-radius:14px;text-align:center;cursor:pointer;text-decoration:none;border:1px solid;transition:all .2s;display:block;}
+.call-btn:hover{transform:translateY(-2px);}
+.call-btn.red{background:rgba(255,92,122,.15);border-color:rgba(255,92,122,.35);color:var(--error);}
+.call-btn.teal{background:rgba(0,180,166,.12);border-color:rgba(0,180,166,.28);color:var(--teal-light);}
+.call-num{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;display:block;}
+.call-label{font-size:.72rem;color:inherit;opacity:.7;margin-top:.2rem;}
+.guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+.guide-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.1rem;cursor:pointer;transition:all .2s;}
+.guide-card:hover{border-color:rgba(0,180,166,.25);transform:translateY(-1px);}
+.guide-card.expanded{border-color:rgba(0,180,166,.2);}
+.guide-ico{font-size:1.6rem;margin-bottom:.6rem;}
+.guide-title{font-family:'Syne',sans-serif;font-size:.88rem;font-weight:700;margin-bottom:.4rem;}
+.guide-preview{font-size:.76rem;color:rgba(255,255,255,.45);line-height:1.5;}
+.guide-steps{display:none;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--border);}
+.guide-card.expanded .guide-steps{display:block;}
+.guide-step{display:flex;gap:.7rem;margin-bottom:.7rem;align-items:flex-start;}
+.guide-step:last-child{margin-bottom:0;}
+.step-num{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--sky));color:var(--ink);font-weight:800;font-size:.72rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.1rem;}
+.step-text{font-size:.8rem;color:rgba(255,255,255,.7);line-height:1.55;}
+.ec-card{background:var(--card);border:1px solid rgba(255,170,68,.2);border-radius:14px;padding:1.1rem;}
+.ec-row{display:flex;align-items:center;gap:.9rem;padding:.65rem 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.ec-row:last-child{border-bottom:none;}
+.ec-ico{width:36px;height:36px;border-radius:10px;background:rgba(255,170,68,.1);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.ec-name{font-size:.86rem;font-weight:600;}
+.ec-rel{font-size:.72rem;color:rgba(255,255,255,.38);}
+@media(max-width:540px){.guide-grid{grid-template-columns:1fr;}.call-btns{grid-template-columns:1fr 1fr;}}
+</style></head><body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay"></div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <div class="user-block"><div class="user-av">👤</div><div><div class="user-name" id="sb-name">…</div><div class="user-sub">✦ Premium</div></div></div>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+                <a href="medicine-scanner.html"   class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+              <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn active" onclick="location.href='emergency.html'">🚨 Emergency Guide</button></div>
+  </aside>
+  <div class="main">
+    <div class="topbar" style="border-bottom-color:rgba(255,92,122,.2)">
+      <div><div class="topbar-title" style="color:var(--error)">🚨 Emergency Guide</div><div class="topbar-sub">First aid &amp; quick response</div></div>
+      <div class="topbar-right"><button class="hamburger" onclick="zedMobileNav()">☰</button></div>
+    </div>
+    <div class="scroll-area">
+      <div class="emg-wrap anim-1">
+        <div class="emergency-banner">
+          <div class="emg-icon-big">🚨</div>
+          <div><div class="emg-banner-title">If life is in danger</div><div class="emg-banner-sub">Call emergency services immediately. Do not delay — use the buttons below or dial your local emergency number.</div></div>
+        </div>
+        <div class="call-btns">
+          <a href="tel:112" class="call-btn red"><span class="call-num">112</span><span class="call-label">Medical Emergency</span></a>
+          <a href="tel:199" class="call-btn red"><span class="call-num">199</span><span class="call-label">Poice</span></a>
+          <a href="tel:767" class="call-btn red"><span class="call-num">767</span><span class="call-label">Fire Service</span></a>
+          <a href="tel:122" class="call-btn red"><span class="call-num">122</span><span class="call-label">FRSC(Road Accidents)</span></a>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="card"><div class="card-header"><div class="card-title">⚡ Emergency Contacts</div><a href="edit-profile.html" class="card-link">Edit →</a></div>
+          <div id="ec-section"><div style="font-size:.82rem;color:rgba(255,255,255,.35);text-align:center;padding:.8rem">No emergency contact set. <a href="edit-profile.html" style="color:var(--teal-light)">Add one →</a></div></div>
+        </div>
+
+        <!-- First Aid Guides -->
+        <div><div style="font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:.8rem">First Aid Guides</div>
+          <div class="guide-grid" id="guide-grid">
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">💔</div><div class="guide-title">Cardiac Arrest / CPR</div>
+              <div class="guide-preview">Step-by-step CPR instructions for adults</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">1</div><div class="step-text">Call emergency services (911) immediately.</div></div>
+                <div class="guide-step"><div class="step-num">2</div><div class="step-text">Place heel of hand on center of chest. Interlock fingers.</div></div>
+                <div class="guide-step"><div class="step-num">3</div><div class="step-text">Push hard and fast — 100–120 compressions/min, 2 inches deep.</div></div>
+                <div class="guide-step"><div class="step-num">4</div><div class="step-text">After 30 compressions: tilt head, lift chin, give 2 rescue breaths.</div></div>
+                <div class="guide-step"><div class="step-num">5</div><div class="step-text">Continue until help arrives or AED is available.</div></div>
+              </div>
+            </div>
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">🫁</div><div class="guide-title">Choking (Adult)</div>
+              <div class="guide-preview">Heimlich maneuver for airway obstruction</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">1</div><div class="step-text">Ask "Are you choking?" If they can't speak, act immediately.</div></div>
+                <div class="guide-step"><div class="step-num">2</div><div class="step-text">Stand behind them, wrap arms around waist.</div></div>
+                <div class="guide-step"><div class="step-num">3</div><div class="step-text">Make a fist above navel. Cover with other hand.</div></div>
+                <div class="guide-step"><div class="step-num">4</div><div class="step-text">Give 5 firm upward abdominal thrusts.</div></div>
+                <div class="guide-step"><div class="step-num">5</div><div class="step-text">Repeat until object is expelled or person loses consciousness.</div></div>
+              </div>
+            </div>
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">🩸</div><div class="guide-title">Severe Bleeding</div>
+              <div class="guide-preview">Controlling major hemorrhage</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">1</div><div class="step-text">Call emergency services if bleeding is severe.</div></div>
+                <div class="guide-step"><div class="step-num">2</div><div class="step-text">Apply firm pressure with clean cloth or bandage.</div></div>
+                <div class="guide-step"><div class="step-num">3</div><div class="step-text">Do not remove cloth — add more on top if soaked.</div></div>
+                <div class="guide-step"><div class="step-num">4</div><div class="step-text">Elevate injured area above heart level if possible.</div></div>
+                <div class="guide-step"><div class="step-num">5</div><div class="step-text">Apply tourniquet above wound if bleeding doesn't stop.</div></div>
+              </div>
+            </div>
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">🔥</div><div class="guide-title">Burns</div>
+              <div class="guide-preview">First response for thermal burns</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">1</div><div class="step-text">Move away from the heat source immediately.</div></div>
+                <div class="guide-step"><div class="step-num">2</div><div class="step-text">Cool burn with cool (not cold/ice) running water for 20 min.</div></div>
+                <div class="guide-step"><div class="step-num">3</div><div class="step-text">Remove jewelry/tight items near the burn.</div></div>
+                <div class="guide-step"><div class="step-num">4</div><div class="step-text">Cover loosely with non-fluffy sterile bandage.</div></div>
+                <div class="guide-step"><div class="step-num">5</div><div class="step-text">Seek medical help for large, deep, or facial burns.</div></div>
+              </div>
+            </div>
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">⚡</div><div class="guide-title">Stroke (FAST)</div>
+              <div class="guide-preview">Recognize and respond to stroke symptoms</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">F</div><div class="step-text"><strong>Face</strong> — Ask them to smile. Is one side drooping?</div></div>
+                <div class="guide-step"><div class="step-num">A</div><div class="step-text"><strong>Arms</strong> — Can they raise both arms? Does one drift down?</div></div>
+                <div class="guide-step"><div class="step-num">S</div><div class="step-text"><strong>Speech</strong> — Is speech slurred or strange?</div></div>
+                <div class="guide-step"><div class="step-num">T</div><div class="step-text"><strong>Time</strong> — Call 911 immediately. Note the time symptoms started.</div></div>
+              </div>
+            </div>
+            <div class="guide-card" onclick="toggleGuide(this)">
+              <div class="guide-ico">🤯</div><div class="guide-title">Seizures</div>
+              <div class="guide-preview">Protecting someone during a seizure</div>
+              <div class="guide-steps">
+                <div class="guide-step"><div class="step-num">1</div><div class="step-text">Stay calm. Note the time the seizure started.</div></div>
+                <div class="guide-step"><div class="step-num">2</div><div class="step-text">Clear hard or sharp objects from the area.</div></div>
+                <div class="guide-step"><div class="step-num">3</div><div class="step-text">Cushion their head. Turn them on their side.</div></div>
+                <div class="guide-step"><div class="step-num">4</div><div class="step-text">Never restrain them or put anything in their mouth.</div></div>
+                <div class="guide-step"><div class="step-num">5</div><div class="step-text">Call 911 if seizure lasts 5+ minutes or person is injured.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+function toggleGuide(el){el.classList.toggle('expanded');}
+async function init(){
+  const user=await ZedAuth.requireAuth();if(!user)return;
+  document.getElementById('sb-name').textContent=user.user_metadata?.first_name||user.email;
+  const{data:p}=await ZedProfile.get(user.id);
+  if(p&&p.ec_name){
+    document.getElementById('ec-section').innerHTML=`<div class="ec-row"><div class="ec-ico">👤</div><div style="flex:1"><div class="ec-name">${p.ec_name}</div><div class="ec-rel">${p.ec_relationship||'Contact'}</div></div><a href="tel:${p.ec_phone||''}" class="btn btn-ghost" style="font-size:.78rem;padding:.42rem .8rem;">📞 Call</a></div>`;
+  }
+}
+init();
+</script></body></html>

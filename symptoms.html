@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Symptom Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.symp-wrap { padding: 1.5rem 1.5rem 3rem; max-width: 900px; display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Step indicator */
+.steps-bar { display: flex; align-items: center; gap: 0; margin-bottom: .5rem; }
+.step-dot { display: flex; align-items: center; gap: 0; }
+.step-circle { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; border: 2px solid rgba(255,255,255,.15); color: rgba(255,255,255,.35); transition: all .3s; flex-shrink: 0; }
+.step-circle.active { background: linear-gradient(135deg,var(--teal),var(--sky)); border-color: transparent; color: var(--ink); }
+.step-circle.done   { background: rgba(0,212,160,.15); border-color: var(--success); color: var(--success); }
+.step-label { font-size: .7rem; color: rgba(255,255,255,.38); margin-top: .3rem; text-align: center; }
+.step-line  { flex: 1; height: 2px; background: rgba(255,255,255,.1); margin: 0 .4rem; margin-bottom: 1rem; transition: background .3s; }
+.step-line.done { background: var(--teal); }
+.step-wrap { display: flex; flex-direction: column; align-items: center; }
+
+/* Body map */
+.body-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.area-btn {
+  padding: .85rem 1rem; border-radius: 13px; cursor: pointer;
+  background: rgba(255,255,255,.04); border: 1.5px solid var(--border);
+  color: rgba(255,255,255,.7); font-size: var(--text-sm); font-weight: 500;
+  text-align: left; transition: all .2s; display: flex; align-items: center; gap: .7rem;
+  font-family: 'DM Sans', sans-serif;
+}
+.area-btn:hover  { border-color: rgba(0,180,166,.3); background: rgba(0,180,166,.06); color: #fff; }
+.area-btn.active { background: rgba(0,180,166,.12); border-color: var(--teal); color: #fff; }
+.area-ico { font-size: 1.3rem; }
+
+/* Symptom chips */
+.chip-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip {
+  padding: .42rem .95rem; border-radius: 99px; cursor: pointer;
+  background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.1);
+  font-size: var(--text-sm); color: rgba(255,255,255,.65); transition: all .2s;
+  font-family: 'DM Sans', sans-serif;
+}
+.chip:hover  { border-color: rgba(0,180,166,.3); color: #fff; }
+.chip.active { background: rgba(0,180,166,.14); border-color: var(--teal); color: #fff; font-weight: 600; }
+
+/* Severity slider */
+.severity-row { display: flex; align-items: center; gap: 1rem; }
+.sev-val { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--teal-light); min-width: 36px; text-align: center; }
+input[type=range] { flex: 1; accent-color: var(--teal); height: 6px; cursor: pointer; }
+.sev-labels { display: flex; justify-content: space-between; font-size: var(--text-xs); color: rgba(255,255,255,.35); margin-top: .3rem; }
+
+/* Duration select pills */
+.dur-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+.dur-btn { padding: .42rem .95rem; border-radius: 99px; cursor: pointer; background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.1); font-size: var(--text-sm); color: rgba(255,255,255,.65); transition: all .2s; font-family: 'DM Sans', sans-serif; }
+.dur-btn:hover  { border-color: rgba(0,180,166,.3); color: #fff; }
+.dur-btn.active { background: rgba(0,180,166,.14); border-color: var(--teal); color: #fff; font-weight: 600; }
+
+/* Result */
+.result-card { background: linear-gradient(145deg,rgba(0,180,166,.08),rgba(79,200,224,.03)); border: 1.5px solid rgba(0,180,166,.2); border-radius: var(--radius-xl); padding: 1.5rem; }
+.result-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
+.result-icon { width: 52px; height: 52px; border-radius: 15px; background: rgba(0,180,166,.15); border: 1.5px solid rgba(0,180,166,.3); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+.result-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; margin-bottom: .2rem; }
+.result-meta  { font-size: var(--text-xs); color: rgba(255,255,255,.45); }
+
+.result-section { margin-bottom: 1.1rem; }
+.result-section h4 { font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--teal-light); margin-bottom: .6rem; display: flex; align-items: center; gap: .4rem; }
+.result-section p  { font-size: var(--text-sm); color: rgba(255,255,255,.78); line-height: 1.75; }
+.result-section ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: .3rem; }
+.result-section li { font-size: var(--text-sm); color: rgba(255,255,255,.75); line-height: 1.6; }
+
+.urgency-banner { padding: .75rem 1rem; border-radius: 10px; font-size: var(--text-sm); font-weight: 600; display: flex; align-items: center; gap: .6rem; margin-bottom: 1.1rem; }
+.urgency-low    { background: rgba(0,212,160,.1);  border: 1px solid rgba(0,212,160,.25);  color: var(--success); }
+.urgency-med    { background: rgba(255,170,68,.1);  border: 1px solid rgba(255,170,68,.25);  color: var(--warn); }
+.urgency-high   { background: rgba(255,92,122,.1);  border: 1px solid rgba(255,92,122,.25);  color: var(--error); }
+
+/* Loading spinner */
+.ai-spin { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2.5rem; }
+.spin-ring { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(0,180,166,.2); border-top-color: var(--teal); animation: spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+@media(max-width:600px) {
+  .body-map-grid { grid-template-columns: 1fr 1fr; }
+  .symp-wrap { padding: 1rem 1rem 2.5rem; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item active"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div><div class="topbar-title">🔬 Symptom Checker</div><div class="topbar-sub">AI-guided symptom analysis</div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" onclick="resetChecker()">↺ Reset</button>
+        <a href="chat.html" class="btn btn-primary btn-sm">🤖 Full AI Chat</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="symp-wrap">
+
+        <!-- Step bar -->
+        <div class="steps-bar anim-1">
+          <div class="step-wrap">
+            <div class="step-circle active" id="sc1">1</div>
+            <div class="step-label">Area</div>
+          </div>
+          <div class="step-line" id="sl1"></div>
+          <div class="step-wrap">
+            <div class="step-circle" id="sc2">2</div>
+            <div class="step-label">Symptoms</div>
+          </div>
+          <div class="step-line" id="sl2"></div>
+          <div class="step-wrap">
+            <div class="step-circle" id="sc3">3</div>
+            <div class="step-label">Severity</div>
+          </div>
+          <div class="step-line" id="sl3"></div>
+          <div class="step-wrap">
+            <div class="step-circle" id="sc4">4</div>
+            <div class="step-label">Analysis</div>
+          </div>
+        </div>
+
+        <!-- Step 1: Body area -->
+        <div class="card anim-2" id="step1">
+          <div class="card-header">
+            <div class="card-title">📍 Where is the problem?</div>
+          </div>
+          <div class="body-map-grid" id="area-grid">
+            <button class="area-btn" onclick="selectArea('Head & Neck','🧠')"><span class="area-ico">🧠</span>Head & Neck</button>
+            <button class="area-btn" onclick="selectArea('Chest & Heart','❤️')"><span class="area-ico">❤️</span>Chest & Heart</button>
+            <button class="area-btn" onclick="selectArea('Abdomen & Stomach','🫁')"><span class="area-ico">🫁</span>Abdomen & Stomach</button>
+            <button class="area-btn" onclick="selectArea('Back & Spine','🦴')"><span class="area-ico">🦴</span>Back & Spine</button>
+            <button class="area-btn" onclick="selectArea('Arms & Hands','💪')"><span class="area-ico">💪</span>Arms & Hands</button>
+            <button class="area-btn" onclick="selectArea('Legs & Feet','🦵')"><span class="area-ico">🦵</span>Legs & Feet</button>
+            <button class="area-btn" onclick="selectArea('Skin & General','🌡️')"><span class="area-ico">🌡️</span>Skin & General</button>
+            <button class="area-btn" onclick="selectArea('Mental & Mood','🧘')"><span class="area-ico">🧘</span>Mental & Mood</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Symptoms -->
+        <div class="card anim-3" id="step2" style="display:none">
+          <div class="card-header">
+            <div class="card-title" id="step2-title">🩺 Select your symptoms</div>
+            <button class="btn btn-ghost btn-sm" onclick="goBack(1)">← Back</button>
+          </div>
+          <div class="chip-grid" id="chip-grid"></div>
+          <div class="field" style="margin-top:1rem;margin-bottom:0">
+            <label>Other symptoms (optional)</label>
+            <div class="field-wrap"><input id="other-symp" type="text" placeholder="Describe any other symptoms…" style="padding-left:.9rem"/></div>
+          </div>
+          <div style="margin-top:1.1rem;display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="goStep3()" id="next2-btn" disabled>Next: Severity →</button>
+          </div>
+        </div>
+
+        <!-- Step 3: Severity + duration -->
+        <div class="card anim-3" id="step3" style="display:none">
+          <div class="card-header">
+            <div class="card-title">📊 How severe?</div>
+            <button class="btn btn-ghost btn-sm" onclick="goBack(2)">← Back</button>
+          </div>
+          <div style="margin-bottom:1.4rem">
+            <label style="font-size:var(--text-xs);font-weight:600;color:rgba(255,255,255,.52);letter-spacing:.04em;display:block;margin-bottom:.65rem">PAIN / DISCOMFORT LEVEL</label>
+            <div class="severity-row">
+              <span style="font-size:.85rem;color:rgba(255,255,255,.4)">Mild</span>
+              <input type="range" min="1" max="10" value="5" id="sev-slider" oninput="updateSev(this.value)"/>
+              <span style="font-size:.85rem;color:rgba(255,255,255,.4)">Severe</span>
+              <span class="sev-val" id="sev-val">5</span>
+            </div>
+          </div>
+          <div style="margin-bottom:1.4rem">
+            <label style="font-size:var(--text-xs);font-weight:600;color:rgba(255,255,255,.52);letter-spacing:.04em;display:block;margin-bottom:.65rem">HOW LONG HAVE YOU HAD THESE SYMPTOMS?</label>
+            <div class="dur-grid" id="dur-grid">
+              <button class="dur-btn" onclick="selectDur(this,'< 1 day')">< 1 day</button>
+              <button class="dur-btn" onclick="selectDur(this,'1–3 days')">1–3 days</button>
+              <button class="dur-btn" onclick="selectDur(this,'4–7 days')">4–7 days</button>
+              <button class="dur-btn" onclick="selectDur(this,'1–2 weeks')">1–2 weeks</button>
+              <button class="dur-btn" onclick="selectDur(this,'2–4 weeks')">2–4 weeks</button>
+              <button class="dur-btn" onclick="selectDur(this,'> 1 month')">> 1 month</button>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:.5rem">
+            <label>Additional context (optional)</label>
+            <div class="field-wrap"><textarea id="extra-notes" placeholder="Any relevant context — recent travel, medications taken, triggers…" style="padding-left:.9rem"></textarea></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:.8rem">
+            <button class="btn btn-primary" onclick="runAnalysis()" id="analyse-btn" disabled>🔬 Analyse Symptoms →</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Result -->
+        <div id="step4" style="display:none"></div>
+
+      </div>
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+
+let _user = null, _profile = null;
+let _area = '', _areaIco = '', _selectedSymps = [], _severity = 5, _duration = '', _sessionSaved = false;
+
+const SYMPTOM_MAP = {
+  'Head & Neck':       ['Headache','Migraine','Dizziness','Neck pain','Stiff neck','Sore throat','Earache','Nasal congestion','Runny nose','Blurred vision','Jaw pain','Toothache'],
+  'Chest & Heart':     ['Chest pain','Shortness of breath','Heart palpitations','Tight chest','Cough','Wheezing','Chest pressure'],
+  'Abdomen & Stomach': ['Stomach pain','Nausea','Vomiting','Diarrhoea','Constipation','Bloating','Heartburn','Loss of appetite','Blood in stool'],
+  'Back & Spine':      ['Lower back pain','Upper back pain','Sciatica','Muscle spasm','Numbness in legs'],
+  'Arms & Hands':      ['Joint pain','Swelling','Numbness','Tingling','Weakness','Wrist pain','Elbow pain'],
+  'Legs & Feet':       ['Knee pain','Ankle pain','Swollen legs','Leg cramps','Foot pain','Varicose veins'],
+  'Skin & General':    ['Fever','Fatigue','Rash','Itching','Swelling','Chills','Night sweats','Weight loss','Weight gain'],
+  'Mental & Mood':     ['Anxiety','Depression','Insomnia','Fatigue','Mood swings','Brain fog','Panic attacks','Memory issues'],
+};
+
+async function init() {
+  _user = await ZedAuth.requireAuth(); if (!_user) return;
+  const { data: p } = await ZedProfile.get(_user.id);
+  _profile = p;
+  document.getElementById('sb-name').textContent = ZedProfile.displayName(p, _user).split(' ')[0];
+}
+
+function selectArea(area, ico) {
+  _area = area; _areaIco = ico; _selectedSymps = [];
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  // populate chips
+  const chips = SYMPTOM_MAP[area] || [];
+  document.getElementById('chip-grid').innerHTML = chips.map(s =>
+    `<button class="chip" onclick="toggleChip(this,'${s}')">${s}</button>`
+  ).join('');
+
+  document.getElementById('step2-title').textContent = `🩺 Symptoms — ${area}`;
+  document.getElementById('next2-btn').disabled = true;
+
+  // Transition
+  setTimeout(() => {
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = '';
+    setStep(2);
+  }, 180);
+}
+
+function toggleChip(el, sym) {
+  el.classList.toggle('active');
+  if (el.classList.contains('active')) { _selectedSymps.push(sym); }
+  else { _selectedSymps = _selectedSymps.filter(s => s !== sym); }
+  document.getElementById('next2-btn').disabled = _selectedSymps.length === 0;
+}
+
+function goStep3() {
+  const other = document.getElementById('other-symp').value.trim();
+  if (other) _selectedSymps.push(other);
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = '';
+  setStep(3);
+}
+
+function selectDur(el, dur) {
+  _duration = dur;
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('analyse-btn').disabled = false;
+}
+
+function updateSev(v) {
+  _severity = parseInt(v);
+  document.getElementById('sev-val').textContent = v;
+  const c = v <= 3 ? 'var(--success)' : v <= 6 ? 'var(--warn)' : 'var(--error)';
+  document.getElementById('sev-val').style.color = c;
+}
+
+async function runAnalysis() {
+  const notes = document.getElementById('extra-notes').value.trim();
+  document.getElementById('step3').style.display = 'none';
+  const step4 = document.getElementById('step4');
+  step4.style.display = '';
+  setStep(4);
+
+  step4.innerHTML = `<div class="card"><div class="ai-spin"><div class="spin-ring"></div><div style="font-size:var(--text-sm);color:rgba(255,255,255,.5)">Analysing your symptoms…</div></div></div>`;
+
+  const p = _profile || {};
+  const profileStr = p.age
+    ? `Patient: ${[p.first_name,p.last_name].filter(Boolean).join(' ')||'Unknown'}, Age ${p.age}, ${p.gender||'?'}. Conditions: ${p.conditions||'None'}. Meds: ${p.medications||'None'}. Allergies: ${p.allergies||'None'}.`
+    : 'No patient profile available.';
+
+  const prompt = `You are Zed AI, a clinical diagnostic assistant. Analyse these symptoms and respond in valid JSON only — no markdown, no preamble.
+
+${profileStr}
+Area: ${_area}
+Symptoms: ${_selectedSymps.join(', ')}
+Severity: ${_severity}/10
+Duration: ${_duration}
+${notes ? 'Additional notes: ' + notes : ''}
+
+Return JSON:
+{
+  "urgency": "low|moderate|high|emergency",
+  "urgency_reason": "one sentence",
+  "possible_conditions": [
+    {"name":"Condition","likelihood":"Common|Possible|Less likely","description":"brief description"}
+  ],
+  "recommended_steps": ["step 1","step 2","step 3"],
+  "warning_signs": ["sign to watch for"],
+  "self_care": ["home care tip"],
+  "see_doctor_if": "brief condition",
+  "disclaimer": "short professional disclaimer"
+}`;
+
+  try {
+    const raw = await ZedAI.chat([{ role:'user', content: prompt }], {
+      model: 'claude-sonnet-4-6', max_tokens: 900
+    });
+    const data = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderResult(data, notes);
+
+    // Save to Supabase
+    if (!_sessionSaved) {
+      _sessionSaved = true;
+      ZedSymptoms.save(_user.id, {
+        area: _area, symptoms: _selectedSymps.join(', '),
+        severity: _severity, duration: _duration,
+        result: JSON.stringify(data)
+      }).catch(() => {});
+    }
+  } catch(e) {
+    step4.innerHTML = `<div class="card"><div style="text-align:center;padding:1.5rem;color:var(--error)">⚠️ Analysis failed: ${e.message}</div><div style="text-align:center;margin-top:1rem"><button class="btn btn-ghost" onclick="runAnalysis()">Try Again</button></div></div>`;
+  }
+}
+
+function renderResult(d, notes) {
+  const URGENCY = {
+    low:       { cls: 'urgency-low',  icon: '✅', label: 'Low urgency — monitor at home' },
+    moderate:  { cls: 'urgency-med',  icon: '⚠️', label: 'Moderate — consider seeing a doctor' },
+    high:      { cls: 'urgency-high', icon: '🚨', label: 'High urgency — seek medical care today' },
+    emergency: { cls: 'urgency-high', icon: '🚨', label: 'EMERGENCY — go to ER or call 112 now' },
+  };
+  const u = URGENCY[d.urgency] || URGENCY.moderate;
+
+  const conditions = (d.possible_conditions||[]).map(c => `
+    <div style="padding:.7rem;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <span style="font-weight:600;font-size:var(--text-sm)">${c.name}</span>
+        <span style="font-size:.68rem;padding:.18rem .55rem;border-radius:99px;background:rgba(0,180,166,.1);color:var(--teal-light)">${c.likelihood}</span>
+      </div>
+      <p style="font-size:var(--text-xs);color:rgba(255,255,255,.52);line-height:1.55">${c.description}</p>
+    </div>`).join('');
+
+  const steps  = (d.recommended_steps||[]).map((s,i) => `<li><strong>Step ${i+1}:</strong> ${s}</li>`).join('');
+  const warns  = (d.warning_signs||[]).map(s => `<li>${s}</li>`).join('');
+  const care   = (d.self_care||[]).map(s => `<li>${s}</li>`).join('');
+
+  document.getElementById('step4').innerHTML = `
+    <div class="result-card anim-1">
+      <div class="result-header">
+        <div class="result-icon">${_areaIco}</div>
+        <div>
+          <div class="result-title">${_area} — Symptom Analysis</div>
+          <div class="result-meta">${_selectedSymps.join(' · ')} · Severity ${_severity}/10 · ${_duration}</div>
+        </div>
+      </div>
+
+      <div class="urgency-banner ${u.cls}">${u.icon} ${u.label} — ${d.urgency_reason||''}</div>
+
+      <div class="result-section">
+        <h4>🩺 Possible Conditions</h4>
+        ${conditions}
+      </div>
+      <div class="result-section">
+        <h4>📋 Recommended Steps</h4>
+        <ul>${steps}</ul>
+      </div>
+      <div class="result-section">
+        <h4>🏠 Self-Care Tips</h4>
+        <ul>${care}</ul>
+      </div>
+      <div class="result-section">
+        <h4>⚠️ Warning Signs — See a Doctor If:</h4>
+        <ul>${warns}</ul>
+      </div>
+      ${d.see_doctor_if ? `<div class="result-section"><h4>🏥 Book an Appointment If:</h4><p>${d.see_doctor_if}</p></div>` : ''}
+      <div style="padding:.7rem 1rem;background:rgba(255,255,255,.03);border-radius:9px;font-size:var(--text-xs);color:rgba(255,255,255,.4);line-height:1.6;margin-top:.5rem">
+        ⚕️ ${d.disclaimer || 'This analysis is for informational purposes only and does not constitute medical advice.'}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem">
+        <a href="chat.html" class="btn btn-primary btn-sm">💬 Discuss with AI</a>
+        <a href="hospitals.html" class="btn btn-ghost btn-sm">🏥 Find Hospitals</a>
+        <button class="btn btn-ghost btn-sm" onclick="resetChecker()">↺ New Check</button>
+      </div>
+    </div>`;
+}
+
+function goBack(toStep) {
+  if (toStep === 1) { document.getElementById('step2').style.display='none'; document.getElementById('step1').style.display=''; setStep(1); }
+  if (toStep === 2) { document.getElementById('step3').style.display='none'; document.getElementById('step2').style.display=''; setStep(2); }
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const c = document.getElementById('sc'+i);
+    if (i < n)  { c.classList.add('done'); c.classList.remove('active'); c.textContent = '✓'; }
+    if (i === n){ c.classList.add('active'); c.classList.remove('done'); c.textContent = i; }
+    if (i > n)  { c.classList.remove('done','active'); c.textContent = i; }
+    if (i < 4)  { const l = document.getElementById('sl'+i); if (l) l.classList.toggle('done', i < n); }
+  }
+}
+
+function resetChecker() {
+  _area=''; _areaIco=''; _selectedSymps=[]; _severity=5; _duration=''; _sessionSaved=false;
+  document.getElementById('step1').style.display='';
+  document.getElementById('step2').style.display='none';
+  document.getElementById('step3').style.display='none';
+  document.getElementById('step4').style.display='none';
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+  setStep(1);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — My Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.profile-wrap { padding:1.5rem 1.5rem 3rem; display:flex; flex-direction:column; gap:1.4rem; max-width:860px; }
+
+/* Hero card */
+.profile-hero {
+  background:linear-gradient(135deg,rgba(0,180,166,.1),rgba(79,200,224,.05));
+  border:1.5px solid rgba(0,180,166,.2); border-radius:var(--radius-xl);
+  padding:1.8rem; display:flex; align-items:center; gap:1.5rem; position:relative; overflow:hidden;
+}
+.profile-hero::after { content:'⚕️'; position:absolute; right:1.5rem; top:50%; transform:translateY(-50%); font-size:6rem; opacity:.04; pointer-events:none; }
+.avatar-wrap { flex-shrink:0; position:relative; }
+.avatar { width:76px; height:76px; border-radius:50%; background:linear-gradient(135deg,var(--teal),var(--sky)); display:flex; align-items:center; justify-content:center; font-size:2rem; border:3px solid rgba(0,180,166,.3); }
+.hero-body h2 { font-family:'Syne',sans-serif; font-size:1.45rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.3rem; }
+.hero-body .email { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-bottom:.7rem; }
+.hero-tags { display:flex; flex-wrap:wrap; gap:.4rem; }
+.hero-tag { padding:.22rem .6rem; border-radius:99px; background:rgba(255,255,255,.07); font-size:.68rem; color:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.1); }
+.hero-tag.teal { background:rgba(0,180,166,.1); color:var(--teal-light); border-color:rgba(0,180,166,.2); }
+
+/* Score ring */
+.score-block { margin-left:auto; flex-shrink:0; text-align:center; }
+.score-ring  { width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto .4rem; }
+.score-inner { width:62px; height:62px; border-radius:50%; background:var(--deep); display:flex; align-items:center; justify-content:center; flex-direction:column; }
+.score-num   { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:800; color:var(--teal-light); line-height:1; }
+.score-lbl   { font-size:.58rem; color:rgba(255,255,255,.35); letter-spacing:.05em; text-transform:uppercase; }
+.score-cap   { font-size:var(--text-xs); color:rgba(255,255,255,.38); }
+
+/* Info grid */
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+.info-section { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.2rem; }
+.info-title { font-family:'Syne',sans-serif; font-size:.88rem; font-weight:700; margin-bottom:.9rem; display:flex; align-items:center; gap:.45rem; }
+.info-row { display:flex; justify-content:space-between; align-items:flex-start; padding:.48rem 0; border-bottom:1px solid rgba(255,255,255,.05); gap:.8rem; }
+.info-row:last-child { border-bottom:none; }
+.info-label { font-size:var(--text-xs); color:rgba(255,255,255,.38); white-space:nowrap; flex-shrink:0; }
+.info-val   { font-size:var(--text-sm); color:rgba(255,255,255,.82); font-weight:500; text-align:right; }
+.info-empty { font-size:var(--text-sm); color:rgba(255,255,255,.25); font-style:italic; text-align:center; padding:.6rem 0; }
+
+/* EC card */
+.ec-card { background:rgba(255,170,68,.06); border:1px solid rgba(255,170,68,.18); border-radius:var(--radius-lg); padding:1.2rem; }
+.ec-title { font-family:'Syne',sans-serif; font-size:.88rem; font-weight:700; margin-bottom:.75rem; color:var(--warn); display:flex; align-items:center; gap:.4rem; }
+.ec-name  { font-size:var(--text-sm); font-weight:600; }
+.ec-meta  { font-size:var(--text-xs); color:rgba(255,255,255,.4); margin-top:.1rem; }
+
+/* Sign out button */
+.signout-btn { width:100%; padding:.62rem; background:rgba(255,92,122,.08); border:1px solid rgba(255,92,122,.2); border-radius:9px; color:var(--error); font-size:var(--text-xs); cursor:pointer; transition:all .18s; margin-top:.5rem; font-family:'DM Sans',sans-serif; }
+.signout-btn:hover { background:rgba(255,92,122,.18); }
+
+@media(max-width:640px) {
+  .info-grid { grid-template-columns:1fr; }
+  .profile-hero { flex-direction:column; align-items:flex-start; }
+  .score-block { margin-left:0; }
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay" onclick="zedMobileNav()"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <a href="profile.html" class="user-block">
+      <div class="user-av" id="sb-av">👤</div>
+      <div><div class="user-name" id="sb-name">Loading…</div><div class="user-sub" id="sb-sub">✦ Premium</div></div>
+    </a>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item active"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency Guide</button>
+      <button class="signout-btn" onclick="ZedAuth.signOut()">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:.85rem">
+        <button class="hamburger" onclick="zedMobileNav()"><span class="hamburger-mid"></span></button>
+        <div><div class="topbar-title">👤 My Profile</div><div class="topbar-sub">Health data used by AI for analysis</div></div>
+      </div>
+      <div class="topbar-right">
+        <a href="edit-profile.html" class="btn btn-primary btn-sm">✏️ Edit Profile</a>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="profile-wrap">
+
+        <!-- Hero -->
+        <div class="profile-hero anim-1" id="hero-card">
+          <div class="avatar-wrap">
+            <div class="avatar" id="av-icon">👤</div>
+          </div>
+          <div class="hero-body">
+            <h2 id="p-name">Loading…</h2>
+            <div class="email" id="p-email"></div>
+            <div class="hero-tags" id="p-tags"></div>
+          </div>
+          <div class="score-block">
+            <div class="score-ring" id="score-ring" style="background:conic-gradient(rgba(0,180,166,.4) 0% 50%,rgba(255,255,255,.07) 50%)">
+              <div class="score-inner">
+                <div class="score-num" id="score-num">—</div>
+                <div class="score-lbl">Score</div>
+              </div>
+            </div>
+            <div class="score-cap">Health score</div>
+          </div>
+        </div>
+
+        <!-- No profile CTA -->
+        <div id="no-profile-cta" style="display:none">
+          <div class="card" style="text-align:center;padding:2rem">
+            <div style="font-size:2.5rem;margin-bottom:1rem">🏥</div>
+            <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:.5rem">Complete your health profile</div>
+            <p style="font-size:var(--text-sm);color:rgba(255,255,255,.45);margin-bottom:1.3rem;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.7">Add your medical history, medications, and lifestyle info so Zed AI can give you accurate, personalised analysis.</p>
+            <a href="edit-profile.html" class="btn btn-primary">Set Up Profile →</a>
+          </div>
+        </div>
+
+        <!-- Basic + Medical info -->
+        <div class="info-grid anim-2" id="info-grid" style="display:none">
+          <div class="info-section">
+            <div class="info-title">👤 Basic Info</div>
+            <div id="basic-rows"></div>
+          </div>
+          <div class="info-section">
+            <div class="info-title">🩺 Medical History</div>
+            <div id="medical-rows"></div>
+          </div>
+          <div class="info-section">
+            <div class="info-title">🏃 Lifestyle</div>
+            <div id="lifestyle-rows"></div>
+          </div>
+          <div class="ec-card" id="ec-card" style="display:none">
+            <div class="ec-title">🚨 Emergency Contact</div>
+            <div class="ec-name" id="ec-name"></div>
+            <div class="ec-meta" id="ec-meta"></div>
+            <a id="ec-tel" href="#" class="btn btn-ghost btn-sm" style="margin-top:.8rem;display:inline-flex">📞 Call</a>
+          </div>
+        </div>
+
+        <!-- Quick links -->
+        <div class="card anim-3" id="quick-links" style="display:none">
+          <div class="card-title" style="margin-bottom:1rem">⚡ Quick Links</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem">
+            <a href="vitals.html"   class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">❤️ Log Vitals</a>
+            <a href="symptoms.html" class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">🔬 Check Symptoms</a>
+            <a href="report.html"   class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">📋 Analyse Report</a>
+            <a href="chat.html"     class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">🤖 AI Chat</a>
+            <a href="tips.html"     class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">💡 Health Tips</a>
+            <a href="hospitals.html" class="btn btn-ghost btn-full" style="font-size:var(--text-xs)">🏥 Hospitals</a>
+          </div>
+        </div>
+
+      </div>
+      <div class="page-footer">Developed by ACE. Your data is stored securely and used only to power personalised AI analysis.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+
+function row(label, val) {
+  if (!val || val === '' || val === null) return '';
+  return `<div class="info-row"><span class="info-label">${label}</span><span class="info-val">${val}</span></div>`;
+}
+function emptyRow(msg) {
+  return `<div class="info-empty">${msg}</div>`;
+}
+
+async function init() {
+  const user = await ZedAuth.requireAuth(); if (!user) return;
+
+  const name = user.user_metadata?.first_name || user.email?.split('@')[0] || 'there';
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('p-email').textContent = user.email;
+
+  const { data: p } = await ZedProfile.get(user.id);
+
+  if (!p) {
+    document.getElementById('p-name').textContent = name;
+    document.getElementById('no-profile-cta').style.display = '';
+    return;
+  }
+
+  // Hero
+  const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || name;
+  document.getElementById('p-name').textContent = fullName;
+  document.getElementById('sb-name').textContent = p.first_name || name;
+  document.getElementById('sb-sub').textContent  = p.blood_group ? `🩸 ${p.blood_group} · Premium` : '✦ Premium';
+
+  // Tags
+  const tags = [
+    p.blood_group && { cls:'teal', t:'🩸 ' + p.blood_group },
+    p.age         && { cls:'',     t: p.age + ' yrs' },
+    p.gender      && { cls:'',     t: p.gender },
+    p.conditions && !/^none$/i.test(p.conditions.trim()) && { cls:'', t:'📋 Conditions' },
+    p.medications && !/^none$/i.test(p.medications.trim()) && { cls:'', t:'💊 Meds' },
+  ].filter(Boolean);
+  document.getElementById('p-tags').innerHTML = tags.map(t => `<span class="hero-tag ${t.cls}">${t.t}</span>`).join('');
+
+  // Health score
+  const score = zedHealthScore(p);
+  if (score) {
+    document.getElementById('score-num').textContent = score;
+    document.getElementById('score-ring').style.background = `conic-gradient(var(--teal) 0% ${score}%, rgba(255,255,255,.07) ${score}% 100%)`;
+  }
+
+  // Sections
+  document.getElementById('info-grid').style.display = '';
+  document.getElementById('quick-links').style.display = '';
+
+  // Basic
+  let basicHtml = row('Age', p.age ? p.age + ' yrs' : null)
+    + row('Gender', p.gender)
+    + row('Blood Group', p.blood_group)
+    + row('Height', p.height ? p.height + ' cm' : null)
+    + row('Weight', p.weight ? p.weight + ' kg' : null);
+  if (p.height && p.weight) {
+    const bmi = (p.weight / Math.pow(p.height/100, 2)).toFixed(1);
+    const bmiLabel = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+    basicHtml += row('BMI', `${bmi} — ${bmiLabel}`);
+  }
+  document.getElementById('basic-rows').innerHTML = basicHtml || emptyRow('Add basic info →');
+
+  // Medical
+  const medHtml = row('Allergies', p.allergies)
+    + row('Conditions', p.conditions)
+    + row('Medications', p.medications)
+    + row('Past Surgeries', p.past_surgeries)
+    + row('Family History', p.family_history);
+  document.getElementById('medical-rows').innerHTML = medHtml || emptyRow('No medical history added.');
+
+  // Lifestyle
+  const lifestyleHtml = row('Smoking', p.smoking)
+    + row('Alcohol', p.alcohol)
+    + row('Exercise', p.exercise);
+  document.getElementById('lifestyle-rows').innerHTML = lifestyleHtml || emptyRow('No lifestyle data added.');
+
+  // Emergency contact
+  if (p.ec_name) {
+    document.getElementById('ec-card').style.display = '';
+    document.getElementById('ec-name').textContent = p.ec_name;
+    document.getElementById('ec-meta').textContent = [p.ec_relationship, p.ec_phone].filter(Boolean).join(' · ');
+    if (p.ec_phone) document.getElementById('ec-tel').href = 'tel:' + p.ec_phone;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

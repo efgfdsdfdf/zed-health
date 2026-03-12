@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zed — Sign In / Sign Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink: #0a1628; --deep: #0d2341; --teal: #00b4a6; --teal-light: #00d4c4;
+    --sky: #4fc8e0; --border: rgba(0,180,166,0.18); --border-dim: rgba(255,255,255,0.08);
+    --glow: rgba(0,180,166,0.25); --error: #ff5c7a; --success: #00d4a0;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--ink); color: #fff; min-height: 100vh; overflow-x: hidden; }
+
+  /* Loader */
+  #loader { position:fixed;inset:0;z-index:9999;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,visibility .5s; }
+  #loader.hide { opacity:0;visibility:hidden; }
+  .loader-logo { font-family:'Syne',sans-serif;font-size:3.2rem;font-weight:800;background:linear-gradient(135deg,#fff,var(--teal),var(--sky));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:pulse-l 1.2s ease-in-out infinite; }
+  .loader-bar-wrap { margin-top:1.5rem;width:110px;height:2px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden; }
+  .loader-bar { height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--sky));animation:fill-l 1.4s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes pulse-l { 0%,100%{opacity:1}50%{opacity:.45} }
+  @keyframes fill-l  { to{width:100%} }
+  @keyframes fade-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  @keyframes slide-d { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:none} }
+
+  /* Noise */
+  body::before { content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.3; }
+
+  /* Header */
+  header { position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1rem 5%;background:rgba(10,22,40,.8);backdrop-filter:blur(18px);border-bottom:1px solid var(--border-dim);animation:slide-d .6s 1.6s both; }
+  .logo { font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:800;background:linear-gradient(135deg,#fff,var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-decoration:none;letter-spacing:-.03em; }
+  .header-back { display:flex;align-items:center;gap:.5rem;color:rgba(255,255,255,.5);text-decoration:none;font-size:.84rem;transition:color .2s; }
+  .header-back:hover { color:var(--teal-light); }
+
+  /* Layout */
+  .page-wrap { min-height:100vh;display:grid;grid-template-columns:1fr 1fr;position:relative;z-index:1; }
+
+  /* Left panel */
+  .left-panel { display:flex;flex-direction:column;justify-content:center;padding:8rem 6% 5rem;position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(0,180,166,.07) 0%,transparent 60%); }
+  .orb1 { position:absolute;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(0,180,166,.13) 0%,transparent 70%);top:-80px;left:-80px;pointer-events:none;animation:f1 9s ease-in-out infinite; }
+  .orb2 { position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(79,200,224,.08) 0%,transparent 70%);bottom:5%;right:-50px;pointer-events:none;animation:f2 11s ease-in-out infinite; }
+  @keyframes f1 { 0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)} }
+  @keyframes f2 { 0%,100%{transform:translateY(0)}50%{transform:translateY(16px)} }
+  .left-content { position:relative;z-index:1;max-width:460px;animation:fade-up .8s 1.8s both; }
+  .left-badge { display:inline-flex;align-items:center;gap:.5rem;padding:.32rem .85rem;background:rgba(0,180,166,.1);border:1px solid rgba(0,180,166,.25);border-radius:99px;font-size:.7rem;color:var(--teal-light);font-weight:500;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1.7rem; }
+  .badge-dot { width:5px;height:5px;background:var(--teal);border-radius:50%;animation:blink 1.4s infinite; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+  .left-content h1 { font-family:'Syne',sans-serif;font-size:clamp(2rem,3.2vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:1.1rem; }
+  .accent { background:linear-gradient(135deg,var(--teal),var(--sky));-webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+  .left-content p { font-size:.98rem;line-height:1.75;color:rgba(255,255,255,.48);font-weight:300;margin-bottom:2.2rem; }
+  .pills { display:flex;flex-direction:column;gap:.8rem; }
+  .pill { display:flex;align-items:center;gap:1rem;padding:.88rem 1.15rem;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:13px;transition:border-color .2s; }
+  .pill:hover { border-color:rgba(0,180,166,.2); }
+  .pill-ico { font-size:1.25rem;flex-shrink:0; }
+  .pill h4 { font-size:.86rem;font-weight:600;margin-bottom:.12rem; }
+  .pill p { font-size:.76rem;color:rgba(255,255,255,.38);line-height:1.4; }
+  .ecg { margin-top:2.2rem;opacity:.14;overflow:hidden;height:38px; }
+  .ecg svg { width:200%;animation:ecg 5s linear infinite; }
+  @keyframes ecg { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+  /* Right panel */
+  .right-panel { display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8rem 5% 5rem;background:rgba(255,255,255,.015);border-left:1px solid var(--border-dim); }
+  .auth-box { width:100%;max-width:430px;animation:fade-up .8s 2s both; }
+
+  /* Tabs */
+  .tab-bar { display:flex;background:rgba(255,255,255,.04);border:1px solid var(--border-dim);border-radius:12px;padding:4px;margin-bottom:2rem; }
+  .tab { flex:1;padding:.62rem;text-align:center;border-radius:9px;font-size:.87rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.42);transition:all .22s;font-family:'DM Sans',sans-serif; }
+  .tab.active { background:linear-gradient(135deg,var(--teal),var(--sky));color:var(--ink);font-weight:700;box-shadow:0 4px 16px var(--glow); }
+
+  /* Form */
+  .form-heading { margin-bottom:1.6rem; }
+  .form-heading h2 { font-family:'Syne',sans-serif;font-size:1.55rem;font-weight:800;letter-spacing:-.025em;margin-bottom:.35rem; }
+  .form-heading p { font-size:.86rem;color:rgba(255,255,255,.42); }
+  .form-panel { display:none; }
+  .form-panel.active { display:block;animation:fade-up .3s ease both; }
+  .form-row { display:grid;grid-template-columns:1fr 1fr;gap:.9rem; }
+  .field { margin-bottom:1rem; }
+  .field label { display:block;font-size:.76rem;font-weight:500;color:rgba(255,255,255,.52);letter-spacing:.04em;margin-bottom:.4rem; }
+  .field-wrap { position:relative; }
+  .f-icon { position:absolute;left:.88rem;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;opacity:.45; }
+  .field input, .field select { width:100%;padding:.72rem 1rem .72rem 2.45rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s,box-shadow .2s;appearance:none; }
+  .field input::placeholder { color:rgba(255,255,255,.23); }
+  .field input:focus, .field select:focus { border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,180,166,.12); }
+  .field input.err { border-color:var(--error); }
+  .f-err { font-size:.7rem;color:var(--error);margin-top:.28rem;display:none; }
+  .f-err.show { display:block; }
+  .pw-eye { position:absolute;right:.88rem;top:50%;transform:translateY(-50%);cursor:pointer;font-size:.95rem;opacity:.4;transition:opacity .2s;user-select:none; }
+  .pw-eye:hover { opacity:.8; }
+  .strength-bar { height:3px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:.45rem 0 .28rem; }
+  .strength-fill { height:100%;border-radius:99px;width:0%;transition:width .3s,background .3s; }
+  .strength-lbl { font-size:.68rem;color:rgba(255,255,255,.32); }
+  .divider { display:flex;align-items:center;gap:.9rem;margin:1.3rem 0; }
+  .divider::before,.divider::after { content:'';flex:1;height:1px;background:rgba(255,255,255,.08); }
+  .divider span { font-size:.73rem;color:rgba(255,255,255,.28);white-space:nowrap; }
+  .social-row { display:flex;gap:.75rem; }
+  .social-btn { flex:1;display:flex;align-items:center;justify-content:center;gap:.55rem;padding:.68rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.68);font-size:.84rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s; }
+  .social-btn:hover { border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff; }
+  .forgot-row { text-align:right;margin-bottom:1.1rem; }
+  .forgot-row a { font-size:.76rem;color:var(--teal-light);text-decoration:none;cursor:pointer; }
+  .forgot-row a:hover { text-decoration:underline; }
+  .terms-row { display:flex;align-items:flex-start;gap:.65rem;margin-bottom:1.3rem; }
+  .terms-row input[type=checkbox] { width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:var(--teal);cursor:pointer;padding:0!important; }
+  .terms-row label { font-size:.77rem;color:rgba(255,255,255,.42);cursor:pointer;line-height:1.5; }
+  .terms-row a { color:var(--teal-light);text-decoration:none; }
+  .btn-submit { width:100%;padding:.88rem;background:linear-gradient(135deg,var(--teal),var(--sky));border:none;border-radius:12px;color:var(--ink);font-family:'Syne',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;box-shadow:0 6px 24px var(--glow);transition:transform .2s,box-shadow .2s,opacity .2s;position:relative;overflow:hidden; }
+  .btn-submit:hover { transform:translateY(-1px);box-shadow:0 10px 30px rgba(0,180,166,.4); }
+  .btn-submit:disabled { opacity:.5;cursor:not-allowed;transform:none; }
+  .shimmer { position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.22) 50%,transparent 100%);transform:translateX(-100%); }
+  .btn-submit.loading .shimmer { animation:shim 1.2s infinite; }
+  @keyframes shim { to{transform:translateX(100%)} }
+
+  /* Toast */
+  #toast { position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%) translateY(18px);backdrop-filter:blur(12px);border-radius:12px;padding:.82rem 1.5rem;font-size:.86rem;z-index:9000;opacity:0;transition:all .38s ease;display:flex;align-items:center;gap:.55rem;pointer-events:none;white-space:nowrap;max-width:90vw; }
+  #toast.show { opacity:1;transform:translateX(-50%) translateY(0); }
+
+  footer { position:relative;z-index:1;padding:1.8rem 5%;border-top:1px solid rgba(255,255,255,.06);text-align:center;font-size:.72rem;color:rgba(255,255,255,.22);line-height:1.6; }
+
+  @media(max-width:860px) { .page-wrap{grid-template-columns:1fr;} .left-panel{display:none;} .right-panel{border-left:none;padding-top:7rem;} }
+  @media(max-width:480px) { .form-row{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="toast"><span id="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<header>
+  <a href="index.html" class="logo">Zed</a>
+  <a href="index.html" class="header-back">← Back to home</a>
+</header>
+
+<div class="page-wrap">
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="orb1"></div><div class="orb2"></div>
+    <div class="left-content">
+      <div class="left-badge"><span class="badge-dot"></span>Trusted AI Healthcare</div>
+      <h1>Your health,<br/>in safe <span class="accent">hands.</span></h1>
+      <p>Sign in to access your personalized health dashboard, AI assistant, and medical insights — all tailored to you.</p>
+      <div class="pills">
+        <div class="pill"><span class="pill-ico">🤖</span><div><h4>AI Medical Assistant</h4><p>Doctor-style follow-ups and personalized analysis</p></div></div>
+        <div class="pill"><span class="pill-ico">🔬</span><div><h4>Symptom Analysis</h4><p>Considers your full medical history and profile</p></div></div>
+        <div class="pill"><span class="pill-ico">🔒</span><div><h4>Private & Encrypted</h4><p>Supabase RLS — your data is yours, always</p></div></div>
+      </div>
+      <div class="ecg"><svg viewBox="0 0 1200 40" fill="none"><polyline points="0,20 80,20 110,20 125,3 140,37 155,6 170,34 185,20 320,20 350,20 365,3 380,37 395,6 410,34 425,20 560,20 590,20 605,3 620,37 635,6 650,34 665,20 800,20 830,20 845,3 860,37 875,6 890,34 905,20 1040,20 1070,20 1085,3 1100,37 1115,6 1130,34 1145,20 1200,20" stroke="#00b4a6" stroke-width="1.5" fill="none"/></svg></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="auth-box">
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('login')">Sign In</button>
+        <button class="tab" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <!-- ── LOGIN ── -->
+      <div class="form-panel active" id="panel-login">
+        <div class="form-heading"><h2>Welcome back</h2><p>Sign in to continue to your health dashboard</p></div>
+        <div class="social-row">
+          <button class="social-btn" onclick="oAuth('google')">🌐Continue with  Google</button>
+
+        </div>
+        <div class="divider"><span>or continue with email</span></div>
+        <div class="field"><label>Email address</label><div class="field-wrap"><span class="f-icon">✉️</span><input type="email" id="li-email" placeholder="you@example.com"/></div><div class="f-err" id="li-email-e">Valid email required.</div></div>
+        <div class="field"><label>Password</label><div class="field-wrap"><span class="f-icon">🔑</span><input type="password" id="li-pw" placeholder="Your password"/><span class="pw-eye" onclick="togglePw('li-pw',this)">👁</span></div><div class="f-err" id="li-pw-e">Password is required.</div></div>
+        <div class="forgot-row"><a onclick="forgotPassword()">Forgot password?</a></div>
+        <button class="btn-submit" id="btn-login" onclick="doLogin()"><span class="shimmer"></span>Sign In →</button>
+      </div>
+
+      <!-- ── SIGNUP ── -->
+      <div class="form-panel" id="panel-signup">
+        <div class="form-heading"><h2>Create your account</h2><p>Get started with personalized AI healthcare</p></div>
+        <div class="social-row">
+          <button class="social-btn" onclick="oAuth('google')">🌐Continue with Google</button>
+        </div>
+        <div class="divider"><span>or sign up with email</span></div>
+        <div class="form-row">
+          <div class="field"><label>First name</label><div class="field-wrap"><span class="f-icon">👤</span><input type="text" id="su-fname" placeholder="Ada"/></div><div class="f-err" id="su-fname-e">Required.</div></div>
+          <div class="field"><label>Last name</label><div class="field-wrap"><span class="f-icon">👤</span><input type="text" id="su-lname" placeholder="Lovelace"/></div><div class="f-err" id="su-lname-e">Required.</div></div>
+        </div>
+        <div class="field"><label>Email address</label><div class="field-wrap"><span class="f-icon">✉️</span><input type="email" id="su-email" placeholder="you@example.com"/></div><div class="f-err" id="su-email-e">Valid email required.</div></div>
+        <div class="form-row">
+          <div class="field"><label>Date of birth</label><div class="field-wrap"><span class="f-icon">📅</span><input type="date" id="su-dob"/></div></div>
+          <div class="field"><label>Gender</label><div class="field-wrap"><span class="f-icon">⚧</span><select id="su-gender"><option value="" disabled selected>Select</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div></div>
+        </div>
+        <div class="field"><label>Password</label><div class="field-wrap"><span class="f-icon">🔑</span><input type="password" id="su-pw" placeholder="Create a strong password" oninput="pwStrength(this.value)"/><span class="pw-eye" onclick="togglePw('su-pw',this)">👁</span></div><div class="strength-bar"><div class="strength-fill" id="sf"></div></div><div class="strength-lbl" id="sl">Password strength</div><div class="f-err" id="su-pw-e">Min. 8 characters required.</div></div>
+        <div class="field"><label>Confirm password</label><div class="field-wrap"><span class="f-icon">🔑</span><input type="password" id="su-pw2" placeholder="Repeat password"/><span class="pw-eye" onclick="togglePw('su-pw2',this)">👁</span></div><div class="f-err" id="su-pw2-e">Passwords do not match.</div></div>
+        <div class="terms-row"><input type="checkbox" id="terms"/><label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I understand Zed does not replace professional medical advice.</label></div>
+        <button class="btn-submit" id="btn-signup" onclick="doSignup()"><span class="shimmer"></span>Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Developed by ACE. Zed does not replace professional medical advice. Always consult a qualified healthcare provider.</footer>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+// ── Loader ─────────────────────────────────────────────────────
+window.addEventListener('load', () =>
+  setTimeout(() => document.getElementById('loader').classList.add('hide'), 1400)
+);
+
+// ── Check if already logged in ─────────────────────────────────
+(async () => {
+  const user = await ZedAuth.getUser();
+  if (user) window.location.href = 'dashboard.html';
+})();
+
+// ── Tab switch ──────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ── Password visibility ─────────────────────────────────────────
+function togglePw(id, el) {
+  const i = document.getElementById(id);
+  i.type = i.type === 'password' ? 'text' : 'password';
+  el.textContent = i.type === 'password' ? '👁' : '🙈';
+}
+
+// ── Password strength ───────────────────────────────────────────
+function pwStrength(v) {
+  let s = 0;
+  if (v.length >= 8)         s++;
+  if (/[A-Z]/.test(v))       s++;
+  if (/[0-9]/.test(v))       s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+  const cfg = [
+    { w:'0%',   c:'transparent',  t:'Password strength' },
+    { w:'25%',  c:'#ff5c7a',      t:'Weak' },
+    { w:'50%',  c:'#ffaa00',      t:'Fair' },
+    { w:'75%',  c:'#00b4a6',      t:'Good' },
+    { w:'100%', c:'#00d4a0',      t:'Strong ✓' }
+  ][s];
+  const sf = document.getElementById('sf');
+  const sl = document.getElementById('sl');
+  sf.style.width = cfg.w; sf.style.background = cfg.c;
+  sl.textContent = cfg.t; sl.style.color = cfg.c === 'transparent' ? 'rgba(255,255,255,.32)' : cfg.c;
+}
+
+// ── Validation helpers ──────────────────────────────────────────
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function setErr(id, show, msg) {
+  const err = document.getElementById(id + '-e');
+  const inp = document.getElementById(id);
+  if (err) { err.classList.toggle('show', show); if (msg) err.textContent = msg; }
+  if (inp) inp.classList.toggle('err', show);
+  return show;
+}
+function clearErr(id) { setErr(id, false); }
+
+// ── Toast ───────────────────────────────────────────────────────
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toast-msg');
+  const ico = document.getElementById('toast-icon');
+  const styles = {
+    success: { bg:'rgba(0,212,160,.14)', bc:'rgba(0,212,160,.3)', c:'#00d4a0', i:'✓' },
+    error:   { bg:'rgba(255,92,122,.14)', bc:'rgba(255,92,122,.3)', c:'#ff5c7a', i:'✕' },
+    info:    { bg:'rgba(0,180,166,.14)', bc:'rgba(0,180,166,.28)', c:'#00d4c4', i:'ℹ' },
+    warn:    { bg:'rgba(255,170,68,.14)', bc:'rgba(255,170,68,.3)', c:'#ffaa44', i:'⚠' }
+  };
+  const s = styles[type] || styles.success;
+  t.style.cssText += `background:${s.bg};border:1px solid ${s.bc};color:${s.c};`;
+  ico.textContent = s.i; m.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3400);
+}
+
+function btnLoading(id, loading, label) {
+  const b = document.getElementById(id);
+  b.disabled = loading;
+  if (loading) { b.classList.add('loading'); b.childNodes[1].textContent = label; }
+  else { b.classList.remove('loading'); }
+}
+
+// ── SIGN IN ─────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('li-email').value.trim();
+  const pw    = document.getElementById('li-pw').value;
+  let err = false;
+  if (!validEmail(email)) err = setErr('li-email', true, 'Valid email required.');
+  else clearErr('li-email');
+  if (!pw) err = setErr('li-pw', true, 'Password is required.');
+  else clearErr('li-pw');
+  if (err) return;
+
+  btnLoading('btn-login', true, 'Signing in…');
+
+  const { data, error } = await ZedAuth.signIn(email, pw);
+
+  btnLoading('btn-login', false);
+  document.getElementById('btn-login').childNodes[1].textContent = 'Sign In →';
+
+  if (error) {
+    const msg = error.message.includes('Invalid login')
+      ? 'Incorrect email or password. Please try again.'
+      : error.message;
+    toast(msg, 'error');
+    setErr('li-pw', true, 'Check your credentials and try again.');
+    return;
+  }
+
+  toast('Welcome back! Redirecting…', 'success');
+  setTimeout(() => window.location.href = 'dashboard.html', 1200);
+}
+
+// ── SIGN UP ─────────────────────────────────────────────────────
+async function doSignup() {
+  const fname = document.getElementById('su-fname').value.trim();
+  const lname = document.getElementById('su-lname').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw    = document.getElementById('su-pw').value;
+  const pw2   = document.getElementById('su-pw2').value;
+  const dob   = document.getElementById('su-dob').value;
+  const gender= document.getElementById('su-gender').value;
+  const terms = document.getElementById('terms').checked;
+  let err = false;
+
+  if (!fname)               err = setErr('su-fname', true) || err; else clearErr('su-fname');
+  if (!lname)               err = setErr('su-lname', true) || err; else clearErr('su-lname');
+  if (!validEmail(email))   err = setErr('su-email', true) || err; else clearErr('su-email');
+  if (pw.length < 8)        err = setErr('su-pw',    true, 'Min. 8 characters required.') || err; else clearErr('su-pw');
+  if (pw !== pw2 || !pw2)   err = setErr('su-pw2',   true, 'Passwords do not match.') || err; else clearErr('su-pw2');
+  if (!terms) { toast('Please accept the Terms of Service.', 'warn'); return; }
+  if (err) return;
+
+  btnLoading('btn-signup', true, 'Creating account…');
+
+  // Calculate age from DOB
+  let age = null;
+  if (dob) {
+    const diff = Date.now() - new Date(dob).getTime();
+    age = Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+  }
+
+  const { data, error } = await ZedAuth.signUp(email, pw, {
+    first_name: fname,
+    last_name:  lname,
+    full_name:  fname + ' ' + lname
+  });
+
+  if (error) {
+    btnLoading('btn-signup', false);
+    document.getElementById('btn-signup').childNodes[1].textContent = 'Create Account →';
+    const msg = error.message.includes('already registered')
+      ? 'This email is already in use. Try signing in instead.'
+      : error.message;
+    toast(msg, 'error');
+    return;
+  }
+
+  // If email confirmation is disabled in Supabase, user is logged in immediately
+  // Pre-fill profile with signup data
+  if (data.user) {
+    await ZedProfile.upsert(data.user.id, {
+      first_name: fname, last_name: lname, age, gender,
+      updated_at: new Date().toISOString()
+    });
+    toast('Account created! Setting up your profile…', 'success');
+    setTimeout(() => window.location.href = 'edit-profile.html', 1400);
+  } else {
+    // Email confirmation enabled — Supabase sends a magic link
+    btnLoading('btn-signup', false);
+    document.getElementById('btn-signup').childNodes[1].textContent = 'Create Account →';
+    toast('Check your email to confirm your account!', 'info');
+  }
+}
+
+// ── OAUTH ───────────────────────────────────────────────────────
+async function oAuth(provider) {
+  toast(`Connecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)}…`, 'info');
+  const { error } = await ZedAuth.oAuth(provider);
+  if (error) toast(error.message, 'error');
+  // On success, Supabase redirects to dashboard.html (set in zed-core.js redirectTo)
+}
+
+// ── FORGOT PASSWORD ─────────────────────────────────────────────
+async function forgotPassword() {
+  const email = document.getElementById('li-email').value.trim();
+  if (!validEmail(email)) {
+    setErr('li-email', true, 'Enter your email first, then click Forgot password.');
+    return;
+  }
+  const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/login.html'
+  });
+  if (error) toast(error.message, 'error');
+  else toast('Password reset email sent! Check your inbox.', 'success');
+}
+
+// ── Handle password reset redirect ─────────────────────────────
+// Supabase sends #access_token=...&type=recovery in the URL
+const hash = window.location.hash;
+if (hash.includes('type=recovery')) {
+  // Show a reset password modal (optional enhancement)
+  toast('Session recovered. Please set a new password in your profile.', 'info');
+}
+
+// ── Auth state listener ─────────────────────────────────────────
+_supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    // OAuth callback lands here
+    window.location.href = 'dashboard.html';
+  }
+});
+
+// ── Real-time email blur validation ────────────────────────────
+['li-email', 'su-email'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('blur', () => {
+    if (el.value && !validEmail(el.value)) setErr(id, true);
+    else clearErr(id);
+  });
+});
+</script>
+</body>
+</html>

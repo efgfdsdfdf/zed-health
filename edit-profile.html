@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Edit Profile</title>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.form-section{display:flex;flex-direction:column;gap:1.1rem;padding:1.2rem;}
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.3rem;}
+.section-header{display:flex;align-items:center;gap:.7rem;margin-bottom:1.2rem;}
+.section-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.section-heading{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;}
+.section-desc{font-size:.75rem;color:rgba(255,255,255,.38);margin-top:.1rem;}
+.field textarea{padding:.72rem .9rem;}
+.no-icon input,.no-icon select{padding-left:.9rem;}
+.save-bar{position:sticky;bottom:0;background:rgba(10,22,40,.95);backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:.9rem 1.2rem;display:flex;gap:.7rem;align-items:center;z-index:30;}
+.save-info{font-size:.75rem;color:rgba(255,255,255,.35);flex:1;}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay"></div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <div class="user-block"><div class="user-av">👤</div><div><div class="user-name" id="sb-name">…</div><div class="user-sub">✦ Premium</div></div></div>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+                <a href="medicine-scanner.html"   class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+              <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item active"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Edit Profile</div><div class="topbar-sub">Used by AI for personalization</div></div>
+      <div class="topbar-right">
+        <button class="hamburger" onclick="zedMobileNav()">☰</button>
+        <a href="profile.html" class="btn btn-ghost" style="font-size:.8rem;padding:.48rem .85rem;">← View</a>
+      </div>
+    </div>
+
+    <div class="scroll-area" style="padding-bottom:80px">
+      <div class="form-section anim-1">
+
+        <!-- Basic -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-icon" style="background:rgba(0,180,166,.12)">👤</div>
+            <div><div class="section-heading">Basic Information</div><div class="section-desc">Name, age, physical details</div></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>First Name</label><div class="field-wrap no-icon"><input id="f-fname" type="text" placeholder="Ada"/></div></div>
+            <div class="field"><label>Last Name</label><div class="field-wrap no-icon"><input id="f-lname" type="text" placeholder="Lovelace"/></div></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Age</label><div class="field-wrap no-icon"><input id="f-age" type="number" min="1" max="120" placeholder="28"/></div></div>
+            <div class="field"><label>Gender</label>
+              <div class="field-wrap no-icon">
+                <select id="f-gender"><option value="">Select…</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Blood Group</label>
+              <div class="field-wrap no-icon">
+                <select id="f-blood"><option value="">Select…</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+              </div>
+            </div>
+            <div class="field"><label>Height (cm)</label><div class="field-wrap no-icon"><input id="f-height" type="number" placeholder="170"/></div></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Weight (kg)</label><div class="field-wrap no-icon"><input id="f-weight" type="number" placeholder="70"/></div></div>
+            <div class="field"></div>
+          </div>
+        </div>
+
+        <!-- Medical -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-icon" style="background:rgba(255,92,122,.1)">🩺</div>
+            <div><div class="section-heading">Medical History</div><div class="section-desc">AI uses this for diagnosis</div></div>
+          </div>
+          <div class="field"><label>Allergies</label><div class="field-wrap"><textarea id="f-allergies" placeholder="e.g. Penicillin, peanuts, dust mites…"></textarea></div></div>
+          <div class="field"><label>Existing Medical Conditions</label><div class="field-wrap"><textarea id="f-conditions" placeholder="e.g. Type 2 diabetes, hypertension…"></textarea></div></div>
+          <div class="field"><label>Current Medications</label><div class="field-wrap"><textarea id="f-meds" placeholder="e.g. Metformin 500mg, Atorvastatin 10mg…"></textarea></div></div>
+          <div class="field"><label>Past Surgeries</label><div class="field-wrap"><textarea id="f-surgeries" placeholder="e.g. Appendectomy (2019)…"></textarea></div></div>
+          <div class="field"><label>Family History</label><div class="field-wrap"><textarea id="f-family" placeholder="e.g. Father: hypertension. Mother: breast cancer…"></textarea></div></div>
+        </div>
+
+        <!-- Lifestyle -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-icon" style="background:rgba(79,200,224,.1)">🏃</div>
+            <div><div class="section-heading">Lifestyle</div><div class="section-desc">Affects health analysis</div></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Smoking</label>
+              <div class="field-wrap no-icon">
+                <select id="f-smoking"><option value="">Select…</option><option>Non-smoker</option><option>Occasional</option><option>Regular</option><option>Ex-smoker</option></select>
+              </div>
+            </div>
+            <div class="field"><label>Alcohol</label>
+              <div class="field-wrap no-icon">
+                <select id="f-alcohol"><option value="">Select…</option><option>None</option><option>Occasionally</option><option>Weekly</option><option>Daily</option></select>
+              </div>
+            </div>
+          </div>
+          <div class="field"><label>Exercise Frequency</label>
+            <div class="field-wrap no-icon">
+              <select id="f-exercise"><option value="">Select…</option><option>Sedentary</option><option>1-2x per week</option><option>3-4x per week</option><option>Daily</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Contact -->
+        <div class="section-card">
+          <div class="section-header">
+            <div class="section-icon" style="background:rgba(255,170,68,.1)">🚨</div>
+            <div><div class="section-heading">Emergency Contact</div><div class="section-desc">Shown in emergencies</div></div>
+          </div>
+          <div class="field"><label>Contact Name</label><div class="field-wrap no-icon"><input id="f-ec-name" type="text" placeholder="Jane Mitchell"/></div></div>
+          <div class="field-row">
+            <div class="field"><label>Phone Number</label><div class="field-wrap no-icon"><input id="f-ec-phone" type="tel" placeholder="+1 555 000 0000"/></div></div>
+            <div class="field"><label>Relationship</label>
+              <div class="field-wrap no-icon">
+                <select id="f-ec-rel"><option value="">Select…</option><option>Spouse</option><option>Parent</option><option>Sibling</option><option>Child</option><option>Friend</option><option>Other</option></select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Sticky save bar -->
+    <div class="save-bar">
+      <span class="save-info" id="save-info">Your data is used by the AI for personalized care.</span>
+      <button class="btn btn-ghost" onclick="location.href='profile.html'" style="font-size:.82rem;">Cancel</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveProfile()" style="font-size:.82rem;">💾 Save Profile</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+zedHideLoader();
+
+function setField(id,val){const el=document.getElementById(id);if(el&&val!=null)el.value=val;}
+
+async function init(){
+  const user=await ZedAuth.requireAuth(); if(!user)return;
+  document.getElementById('sb-name').textContent=user.user_metadata?.first_name||user.email;
+  const{data:p}=await ZedProfile.get(user.id);
+  if(!p)return;
+  setField('f-fname',p.first_name); setField('f-lname',p.last_name); setField('f-age',p.age);
+  setField('f-gender',p.gender); setField('f-blood',p.blood_group); setField('f-height',p.height);
+  setField('f-weight',p.weight); setField('f-allergies',p.allergies); setField('f-conditions',p.conditions);
+  setField('f-meds',p.medications); setField('f-surgeries',p.past_surgeries); setField('f-family',p.family_history);
+  setField('f-smoking',p.smoking); setField('f-alcohol',p.alcohol); setField('f-exercise',p.exercise);
+  setField('f-ec-name',p.ec_name); setField('f-ec-phone',p.ec_phone); setField('f-ec-rel',p.ec_relationship);
+}
+
+async function saveProfile(){
+  const user=await ZedAuth.getUser(); if(!user)return;
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  const fields={
+    first_name:document.getElementById('f-fname').value.trim(),
+    last_name:document.getElementById('f-lname').value.trim(),
+    age:parseInt(document.getElementById('f-age').value)||null,
+    gender:document.getElementById('f-gender').value,
+    blood_group:document.getElementById('f-blood').value,
+    height:parseFloat(document.getElementById('f-height').value)||null,
+    weight:parseFloat(document.getElementById('f-weight').value)||null,
+    allergies:document.getElementById('f-allergies').value.trim(),
+    conditions:document.getElementById('f-conditions').value.trim(),
+    medications:document.getElementById('f-meds').value.trim(),
+    past_surgeries:document.getElementById('f-surgeries').value.trim(),
+    family_history:document.getElementById('f-family').value.trim(),
+    smoking:document.getElementById('f-smoking').value,
+    alcohol:document.getElementById('f-alcohol').value,
+    exercise:document.getElementById('f-exercise').value,
+    ec_name:document.getElementById('f-ec-name').value.trim(),
+    ec_phone:document.getElementById('f-ec-phone').value.trim(),
+    ec_relationship:document.getElementById('f-ec-rel').value,
+    updated_at:new Date().toISOString()
+  };
+  const{error}=await ZedProfile.upsert(user.id,fields);
+  btn.disabled=false; btn.textContent='💾 Save Profile';
+  if(error){zedToast('Error saving: '+error.message,'error');}
+  else{zedToast('Profile saved successfully!','success');document.getElementById('save-info').textContent='Saved ✓ '+new Date().toLocaleTimeString();setTimeout(()=>location.href='profile.html',1400);}
+}
+
+init();
+</script>
+</body></html>

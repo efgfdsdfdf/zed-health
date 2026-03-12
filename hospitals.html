@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zed — Hospital Finder</title>
+<link rel="stylesheet" href="zed.css"/>
+<style>
+.hosp-wrap{padding:1.2rem;display:flex;flex-direction:column;gap:1.1rem;}
+.search-bar{display:flex;gap:.6rem;align-items:center;}
+.search-input-wrap{flex:1;position:relative;}
+.search-input-wrap input{width:100%;padding:.72rem 1rem .72rem 2.5rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:.9rem;outline:none;transition:border-color .2s;}
+.search-input-wrap input:focus{border-color:var(--teal);}
+.search-icon{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none;}
+.filter-row{display:flex;gap:.45rem;flex-wrap:wrap;}
+.filter-pill{padding:.3rem .75rem;border-radius:99px;font-size:.76rem;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);transition:all .18s;}
+.filter-pill.active{background:rgba(0,180,166,.15);border-color:var(--teal);color:var(--teal-light);font-weight:500;}
+
+/* Map */
+#map{width:100%;height:240px;border-radius:14px;border:1px solid rgba(255,255,255,.08);}
+.map-state{width:100%;height:240px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.65rem;color:rgba(255,255,255,.45);font-size:.84rem;text-align:center;padding:1.2rem;}
+.map-state .ico{font-size:2rem;}
+.map-state .err-box{color:#f87171;font-size:.78rem;background:rgba(255,92,122,.08);border:1px solid rgba(255,92,122,.2);border-radius:8px;padding:.55rem 1rem;max-width:360px;line-height:1.6;}
+.retry-btn{padding:.42rem 1rem;border-radius:8px;background:rgba(0,180,166,.12);border:1px solid rgba(0,180,166,.25);color:var(--teal-light);cursor:pointer;font-size:.78rem;}
+.retry-btn:hover{background:rgba(0,180,166,.22);}
+
+/* Cards */
+.hosp-card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:1.1rem;transition:all .2s;}
+.hosp-card:hover{border-color:rgba(0,180,166,.25);transform:translateY(-1px);}
+.hosp-top{display:flex;align-items:flex-start;gap:.9rem;margin-bottom:.9rem;}
+.hosp-logo{width:44px;height:44px;border-radius:12px;background:rgba(0,180,166,.1);border:1px solid rgba(0,180,166,.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.hosp-name{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:.2rem;}
+.hosp-type{font-size:.76rem;color:rgba(255,255,255,.4);}
+.hosp-dist{margin-left:auto;font-size:.78rem;color:var(--teal-light);font-weight:600;white-space:nowrap;}
+.hosp-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.9rem;}
+.hosp-tag{padding:.2rem .55rem;border-radius:99px;background:rgba(255,255,255,.06);font-size:.7rem;color:rgba(255,255,255,.5);}
+.hosp-actions{display:flex;gap:.6rem;}
+.hosp-btn{flex:1;padding:.55rem;border-radius:9px;font-size:.78rem;font-weight:500;cursor:pointer;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);transition:all .18s;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:.3rem;}
+.hosp-btn:hover{border-color:rgba(0,180,166,.3);color:#fff;}
+.hosp-btn.primary-btn{background:rgba(0,180,166,.12);border-color:rgba(0,180,166,.25);color:var(--teal-light);}
+.status-open{color:#4ade80;font-size:.72rem;font-weight:600;}
+.status-closed{color:#f87171;font-size:.72rem;font-weight:600;}
+.status-unknown{color:rgba(255,255,255,.3);font-size:.72rem;}
+.skel-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:15px;padding:1.1rem;margin-bottom:.9rem;animation:skel 1.4s ease-in-out infinite;}
+.skel-line{height:.72rem;border-radius:99px;background:rgba(255,255,255,.07);margin-bottom:.55rem;}
+@keyframes skel{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes fade-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="loader-logo">Zed</div><div class="loader-bar-wrap"><div class="loader-bar"></div></div></div>
+<div id="nav-overlay"></div>
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><a href="index.html" class="logo">Zed</a><span class="logo-badge">Pro</span></div>
+    <div class="user-block"><div class="user-av">👤</div><div><div class="user-name" id="sb-name">…</div><div class="user-sub">✦ Premium</div></div></div>
+    <div style="flex:1;overflow-y:auto">
+      <div class="nav-section"><div class="nav-label">Main</div>
+        <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span>Dashboard</a>
+        <a href="chat.html"      class="nav-item"><span class="nav-icon">🤖</span>AI Chat</a>
+        <a href="symptoms.html"  class="nav-item"><span class="nav-icon">🔬</span>Symptom Checker</a>
+        <a href="report.html"    class="nav-item"><span class="nav-icon">📋</span>Report Analyzer</a>
+        <a href="medicine-scanner.html" class="nav-item"><span class="nav-icon">💊</span>Medicine Scanner</a>
+      </div>
+      <div class="nav-section"><div class="nav-label">Health</div>
+        <a href="vitals.html"    class="nav-item"><span class="nav-icon">❤️</span>Vitals Check</a>
+        <a href="tips.html"      class="nav-item"><span class="nav-icon">💡</span>Health Tips</a>
+        <a href="hospitals.html" class="nav-item active"><span class="nav-icon">🏥</span>Hospitals</a>
+        <a href="profile.html"   class="nav-item"><span class="nav-icon">👤</span>My Profile</a>
+      </div>
+    </div>
+    <div class="sidebar-footer"><button class="emergency-btn" onclick="location.href='emergency.html'">🚨 Emergency</button></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div><div class="topbar-title">Hospital Finder</div><div class="topbar-sub">Find care near you</div></div>
+      <div class="topbar-right"><button class="hamburger" onclick="zedMobileNav()">☰</button></div>
+    </div>
+    <div class="scroll-area">
+      <div class="hosp-wrap anim-1">
+
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input id="hosp-search" type="text" placeholder="Search by name or specialty…" oninput="onSearchInput()"/>
+          </div>
+          <button class="btn btn-primary" onclick="locateAndLoad()" style="font-size:.8rem;padding:.6rem .9rem;white-space:nowrap">📍 Near Me</button>
+        </div>
+
+        <div class="filter-row">
+          <button class="filter-pill active" onclick="setFilter('all',this)">All</button>
+          <button class="filter-pill" onclick="setFilter('emergency',this)">🚨 Emergency</button>
+          <button class="filter-pill" onclick="setFilter('general',this)">🏥 General</button>
+          <button class="filter-pill" onclick="setFilter('cardiac',this)">💔 Cardiac</button>
+          <button class="filter-pill" onclick="setFilter('pediatric',this)">👶 Pediatric</button>
+          <button class="filter-pill" onclick="setFilter('clinic',this)">🩺 Clinic</button>
+        </div>
+
+        <!-- Map lives here -->
+        <div id="map-container">
+          <div class="map-state">
+            <span class="ico">🗺️</span>
+            <span>Click <strong>📍 Near Me</strong> to load the map</span>
+          </div>
+        </div>
+
+        <div id="hosp-list"></div>
+      </div>
+      <div class="page-footer">Developed by ACE. Zed does not replace professional medical advice.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="dist/zed-core.js"></script>
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║  STEP 1 — Paste your Google Maps API key below      ║
+// ║  Get one at: console.cloud.google.com               ║
+// ╚══════════════════════════════════════════════════════╝
+const GOOGLE_API_KEY = 'AIzaSyAhD4GN3GssU3cn7ktr7WaKp5ybiYX6D58';
+
+// ── State ─────────────────────────────────────────────
+let userLat = null, userLng = null;
+let map = null, infoWindow = null;
+let allHospitals = [];
+let currentFilter = 'all';
+let mapsLoaded = false;
+
+// ── Map container UI ──────────────────────────────────
+const MC = () => document.getElementById('map-container');
+
+function mapLoading(msg) {
+  MC().innerHTML = `<div class="map-state"><span class="ico">🗺️</span><span>${msg}</span></div>`;
+}
+
+function mapError(msg) {
+  MC().innerHTML = `
+    <div class="map-state">
+      <span class="ico">⚠️</span>
+      <div class="err-box">${msg}</div>
+      <button class="retry-btn" onclick="locateAndLoad()">🔄 Try Again</button>
+    </div>`;
+}
+
+function mapReady() {
+  // Replace loading div with actual map div
+  MC().innerHTML = '<div id="map"></div>';
+}
+
+// ── Load Google Maps SDK ──────────────────────────────
+function loadMapsSDK() {
+  return new Promise((resolve, reject) => {
+
+    // Already loaded
+    if (mapsLoaded && window.google?.maps?.places) { resolve(); return; }
+
+    // Key not set
+    if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
+      reject(new Error(
+        'API key missing. Open <code>hospitals.html</code> and replace ' +
+        '<code>YOUR_GOOGLE_MAPS_API_KEY</code> with your real key.'
+      ));
+      return;
+    }
+
+    // 10-second timeout
+    const timeout = setTimeout(() => {
+      reject(new Error(
+        'Google Maps took too long to load. Check that:<br>' +
+        '① Your API key is correct<br>' +
+        '② <b>Maps JavaScript API</b> is enabled in Google Cloud Console<br>' +
+        '③ Your internet connection is working'
+      ));
+    }, 10000);
+
+    // Google calls this when the SDK is ready
+    window.__zedMapsReady = () => {
+      clearTimeout(timeout);
+      mapsLoaded = true;
+      resolve();
+    };
+
+    // Google calls this when the key is invalid / API not enabled
+    window.gm_authFailure = () => {
+      clearTimeout(timeout);
+      reject(new Error(
+        'Google Maps authentication failed.<br>' +
+        'Fix: Go to <b>console.cloud.google.com → APIs & Services → Credentials</b><br>' +
+        '① Make sure the key is correct<br>' +
+        '② Enable <b>Maps JavaScript API</b> and <b>Places API</b><br>' +
+        '③ Remove any HTTP referrer restrictions that block your current domain'
+      ));
+    };
+
+    // Append the script
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&callback=__zedMapsReady`;
+    s.async = true;
+    s.defer = true;
+    s.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error(
+        'Failed to fetch the Google Maps script.<br>' +
+        'Check your internet connection, and that your API key has no HTTP referrer restriction blocking this page.'
+      ));
+    };
+    document.head.appendChild(s);
+  });
+}
+
+// ── Geolocation ───────────────────────────────────────
+function getPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('This browser does not support geolocation.')); return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, err => {
+      reject(new Error({
+        1: 'Location access denied.<br>Click the 🔒 icon in your browser address bar → Allow location → Try Again.',
+        2: 'Location unavailable. Try Again.',
+        3: 'Location timed out. Try Again.',
+      }[err.code] || 'Location error.'));
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+  });
+}
+
+// ── Distance ──────────────────────────────────────────
+function km(a, b, c, d) {
+  const R=6371,r=Math.PI/180,dL=(c-a)*r,dN=(d-b)*r;
+  const x=Math.sin(dL/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(dN/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+// ── Init map ──────────────────────────────────────────
+function initMap(lat, lng) {
+  mapReady(); // creates <div id="map">
+
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat, lng}, zoom: 14,
+    streetViewControl: false, mapTypeControl: false,
+    styles: [
+      {elementType:'geometry',            stylers:[{color:'#0d2341'}]},
+      {elementType:'labels.text.stroke',  stylers:[{color:'#0a1628'}]},
+      {elementType:'labels.text.fill',    stylers:[{color:'#aac4d0'}]},
+      {featureType:'road',elementType:'geometry',         stylers:[{color:'#1a3a5c'}]},
+      {featureType:'road',elementType:'labels.text.fill', stylers:[{color:'#7fa8bb'}]},
+      {featureType:'water',elementType:'geometry',        stylers:[{color:'#071526'}]},
+      {featureType:'poi', elementType:'geometry',         stylers:[{color:'#0e1f38'}]},
+    ],
+  });
+
+  infoWindow = new google.maps.InfoWindow();
+
+  // Blue user-location dot
+  new google.maps.Marker({
+    position:{lat,lng}, map, title:'You',
+    icon:{
+      path: google.maps.SymbolPath.CIRCLE,
+      scale:9, fillColor:'#4fc8e0', fillOpacity:1,
+      strokeColor:'#fff', strokeWeight:2,
+    }, zIndex:999,
+  });
+}
+
+// ── Places API ────────────────────────────────────────
+function searchNearby(lat, lng) {
+  return new Promise((resolve, reject) => {
+    // Must pass the rendered map element — not a detached div
+    const mapEl = document.getElementById('map');
+    if (!mapEl) { reject(new Error('Map element missing.')); return; }
+
+    new google.maps.places.PlacesService(mapEl).nearbySearch(
+      { location: new google.maps.LatLng(lat,lng), radius:5000, type:'hospital' },
+      (results, status) => {
+        const S = google.maps.places.PlacesServiceStatus;
+        if (status === S.OK && results?.length) {
+          resolve(
+            results.map(p => ({
+              id:       p.place_id,
+              name:     p.name,
+              vicinity: p.vicinity || '',
+              rating:   p.rating   || null,
+              ratingN:  p.user_ratings_total || 0,
+              openNow:  p.opening_hours?.isOpen?.() ?? null,
+              types:    p.types || [],
+              location: { lat: p.geometry.location.lat(), lng: p.geometry.location.lng() },
+              distance: km(lat, lng, p.geometry.location.lat(), p.geometry.location.lng()),
+            })).sort((a,b) => a.distance - b.distance)
+          );
+        } else if (status === S.ZERO_RESULTS) {
+          resolve([]);
+        } else {
+          reject(new Error(
+            `Places API error: <b>${status}</b><br>` +
+            'Make sure <b>Places API</b> is enabled in Google Cloud Console.'
+          ));
+        }
+      }
+    );
+  });
+}
+
+// ── Markers ───────────────────────────────────────────
+function addMarkers(hospitals) {
+  if (!map) return;
+  const bounds = new google.maps.LatLngBounds();
+  bounds.extend({lat:userLat, lng:userLng});
+  hospitals.slice(0,20).forEach((h,i) => {
+    const m = new google.maps.Marker({
+      position:h.location, map, title:h.name,
+      animation: i<6 ? google.maps.Animation.DROP : null,
+    });
+    bounds.extend(h.location);
+    m.addListener('click', () => {
+      infoWindow.setContent(`
+        <div style="font-family:sans-serif;padding:6px;max-width:220px">
+          <b style="font-size:14px">${esc(h.name)}</b><br>
+          <span style="font-size:12px;color:#555">${esc(h.vicinity)}</span><br>
+          <span style="font-size:12px">📍 ${h.distance.toFixed(1)} km</span>
+          ${h.rating?`<br><span style="font-size:12px">⭐ ${h.rating} (${h.ratingN})</span>`:''}
+        </div>`);
+      infoWindow.open(map, m);
+    });
+  });
+  if (hospitals.length) map.fitBounds(bounds, {padding:50});
+}
+
+// ── Phone (lazy) ──────────────────────────────────────
+window.fetchPhone = (placeId, btn) => {
+  btn.textContent = '⏳';
+  new google.maps.places.PlacesService(document.getElementById('map'))
+    .getDetails({placeId, fields:['formatted_phone_number','international_phone_number']}, (p,s) => {
+      const ph = p?.international_phone_number || p?.formatted_phone_number;
+      if (s === google.maps.places.PlacesServiceStatus.OK && ph) {
+        btn.outerHTML = `<a href="tel:${ph}" class="hosp-btn">📞 ${ph}</a>`;
+      } else {
+        btn.textContent = '📞 No number'; btn.disabled = true;
+      }
+    });
+};
+
+// ── Render list ───────────────────────────────────────
+function renderList(list) {
+  const el = document.getElementById('hosp-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="card" style="text-align:center;padding:1.5rem;color:rgba(255,255,255,.4)">No hospitals found.</div>';
+    return;
+  }
+  el.innerHTML = list.map((h,i) => {
+    const status =
+      h.openNow === true  ? '<span class="status-open">● Open now</span>' :
+      h.openNow === false ? '<span class="status-closed">● Closed</span>' :
+                            '<span class="status-unknown">● Hours unknown</span>';
+    const type = (h.types.find(t=>!['point_of_interest','establishment','health'].includes(t))||'hospital').replace(/_/g,' ');
+    const dir  = `https://www.google.com/maps/dir/?api=1&destination=${h.location.lat},${h.location.lng}&destination_place_id=${h.id}`;
+    return `
+      <div class="hosp-card" style="animation:fade-up .3s ease ${i*40}ms both">
+        <div class="hosp-top">
+          <div class="hosp-logo">🏥</div>
+          <div style="flex:1;min-width:0">
+            <div class="hosp-name">${esc(h.name)}</div>
+            <div class="hosp-type">${esc(h.vicinity)}</div>
+            ${status}
+          </div>
+          <div class="hosp-dist">${h.distance.toFixed(1)} km</div>
+        </div>
+        <div class="hosp-tags">
+          <span class="hosp-tag">${esc(type)}</span>
+          ${h.rating?`<span class="hosp-tag">⭐ ${h.rating} · ${h.ratingN} reviews</span>`:''}
+        </div>
+        <div class="hosp-actions">
+          <button class="hosp-btn" onclick="fetchPhone('${h.id}',this)">📞 Get number</button>
+          <a href="${dir}" target="_blank" rel="noopener" class="hosp-btn primary-btn">🗺️ Directions</a>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function skeleton() {
+  document.getElementById('hosp-list').innerHTML = [1,2,3].map(()=>`
+    <div class="skel-card">
+      <div class="skel-line" style="width:55%"></div>
+      <div class="skel-line" style="width:80%"></div>
+      <div class="skel-line" style="width:35%;margin-top:.3rem"></div>
+    </div>`).join('');
+}
+
+// ── Filter / search ───────────────────────────────────
+function applyFilter() {
+  const q = document.getElementById('hosp-search').value.trim().toLowerCase();
+  const out = allHospitals.filter(h => {
+    const txt = (h.name+' '+h.types.join(' ')).toLowerCase();
+    const mF =
+      currentFilter==='all'       ? true :
+      currentFilter==='emergency' ? txt.includes('emergency') :
+      currentFilter==='general'   ? txt.includes('general')||txt.includes('hospital') :
+      currentFilter==='cardiac'   ? txt.includes('cardiac') :
+      currentFilter==='pediatric' ? txt.includes('pediatric')||txt.includes('children') :
+      currentFilter==='clinic'    ? txt.includes('clinic') : true;
+    const mQ = !q || h.name.toLowerCase().includes(q) || h.vicinity.toLowerCase().includes(q);
+    return mF && mQ;
+  });
+  renderList(out);
+  addMarkers(out);
+}
+
+function setFilter(f,el) {
+  currentFilter=f;
+  document.querySelectorAll('.filter-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  if (allHospitals.length) applyFilter();
+}
+
+let st=null;
+function onSearchInput(){ clearTimeout(st); st=setTimeout(applyFilter,280); }
+
+// ── Main flow ─────────────────────────────────────────
+async function locateAndLoad() {
+  skeleton();
+  mapLoading('Getting your location…');
+  try {
+    const pos = await getPosition();
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
+
+    mapLoading('Loading Google Maps…');
+    await loadMapsSDK();
+
+    initMap(userLat, userLng);         // renders the actual map
+
+    allHospitals = await searchNearby(userLat, userLng);
+    applyFilter();
+
+    typeof zedToast==='function' && zedToast(
+      allHospitals.length ? `Found ${allHospitals.length} hospitals nearby` : 'No hospitals found within 5 km',
+      allHospitals.length ? 'success' : 'warn'
+    );
+  } catch(err) {
+    console.error('[HospitalFinder]', err.message);
+    mapError(err.message);
+    document.getElementById('hosp-list').innerHTML='';
+  }
+}
+
+function esc(s=''){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────
+(async()=>{
+  zedHideLoader();
+  const user = await ZedAuth.requireAuth();
+  if (!user) return;
+  document.getElementById('sb-name').textContent = user.user_metadata?.first_name || user.email;
+  locateAndLoad();
+})();
+</script>
+</body>
+</html>
