@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  ZED CORE  v3  —  Supabase + OpenAI via proxy + shared utils
+//  ZED CORE  v3  —  Supabase + Anthropic via proxy + shared utils
 //  Load AFTER the Supabase CDN <script> on every page.
 // ═══════════════════════════════════════════════════════════════
 
@@ -236,17 +236,22 @@ const ZedNotifications = {
   }
 };
 
-// ── 12. ZedAI — Anthropic Claude, direct from browser ────────────
-//
-//  🔐 The API key below is a PLACEHOLDER. It will be replaced
-//     automatically during your build process using the value from
-//     the .env file. NEVER commit the real key!
+// ── 12. ZedAI — via backend proxy ───────────────────────────────
+//     The actual Anthropic API key is stored on the server.
 // ─────────────────────────────────────────────────────────────────
-const ANTHROPIC_KEY = '%%ANTHROPIC_KEY%%';   // injected by inject-env.js
-
 const ZedAI = {
 
-  _k() { return ANTHROPIC_KEY; },
+  // Internal helper to get the proxy URL – adjust to match your backend
+  _proxyUrl() {
+    // In development, your proxy runs on localhost:3000 (or the port you set)
+    // In production, replace with your actual backend URL or use relative path.
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isDev) {
+      return 'http://localhost:3000/api/anthropic';
+    }
+    // For production, use relative path if backend is on same domain, or absolute URL
+    return '/api/anthropic'; // assumes same origin
+  },
 
   // ── Chat completion ─────────────────────────────────────────────
   // messages : [{role:'user'|'assistant', content:'...'}]
@@ -254,57 +259,43 @@ const ZedAI = {
   // returns  : string (assistant reply)
   async chat(messages, opts = {}) {
     const body = {
-      model:      opts.model      || 'claude-sonnet-4-6',
+      messages,
+      model:      opts.model      || 'claude-3-sonnet-20240229',
       max_tokens: opts.max_tokens || 600,
-      messages
     };
     if (opts.system) body.system = opts.system;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(this._proxyUrl(), {
       method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         this._k(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      const errorMsg = err?.error?.message || `Anthropic error ${res.status}`;
-      
+      const errorMsg = err.error?.message || err.error || `Proxy error ${res.status}`;
+
       // Handle specific status codes with user-friendly messages
       if (res.status === 401) {
-        throw new Error('🔐 API key is invalid. Check your .env file or run the build script.');
+        throw new Error('🔐 Authentication required. Please log in again.');
       }
-      
+      if (res.status === 403) {
+        throw new Error('🚫 Access forbidden. You may not have permission.');
+      }
       if (res.status === 429) {
         throw new Error('⏳ Rate limit reached — wait a moment and try again.');
       }
-      
-      if (res.status === 400) {
-        // Check if it's a low balance error
-        if (errorMsg.includes('credit balance') || errorMsg.includes('low balance') || errorMsg.includes('billing')) {
-          throw new Error('💰 Your Anthropic account has insufficient credits. Please add funds at https://console.anthropic.com/settings/billing');
-        }
-        if (errorMsg.includes('model')) {
-          throw new Error(`🤖 Model error: ${errorMsg}`);
-        }
-        throw new Error(`❌ Bad request: ${errorMsg}`);
-      }
-      
-      if (res.status === 403) {
-        throw new Error('🚫 Access forbidden. Your API key may not have permission for this operation.');
-      }
-      
       if (res.status === 500) {
-        throw new Error('🔧 Anthropic server error. Please try again later.');
+        // Distinguish between server misconfiguration and Anthropic errors
+        if (errorMsg.includes('missing ANTHROPIC_KEY')) {
+          throw new Error('🔧 Server misconfigured. Please contact support.');
+        }
+        throw new Error('🔧 Server error. Please try again later.');
       }
-      
-      // Any other error
-      throw new Error(`❌ ${errorMsg} (${res.status})`);
+      if (res.status === 400 && errorMsg.includes('credit balance')) {
+        throw new Error('💰 Insufficient credits. Please contact support.');
+      }
+      throw new Error(`❌ ${errorMsg}`);
     }
 
     const data = await res.json();
@@ -315,68 +306,54 @@ const ZedAI = {
   // base64   : raw base64 string (no data-uri prefix)
   // mimeType : 'image/jpeg' | 'image/png' | 'image/webp'
   async analyzeImage(base64, mimeType, prompt) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const body = {
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+          { type: 'text',  text: prompt }
+        ]
+      }],
+      max_tokens: 1400
+    };
+
+    const res = await fetch(this._proxyUrl(), {
       method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         this._k(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model:      'claude-sonnet-4-6',
-        max_tokens: 1400,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-            { type: 'text',  text: prompt }
-          ]
-        }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      const errorMsg = err?.error?.message || `Vision error ${res.status}`;
-      
+      const errorMsg = err.error?.message || err.error || `Vision proxy error ${res.status}`;
+
       if (res.status === 401) {
-        throw new Error('🔐 API key is invalid. Check your .env file.');
+        throw new Error('🔐 Authentication required. Please log in again.');
       }
-      
+      if (res.status === 400 && errorMsg.includes('image')) {
+        throw new Error('🖼️ Image format error. Please try a different image.');
+      }
       if (res.status === 429) {
         throw new Error('⏳ Rate limit reached — wait a moment and try again.');
       }
-      
-      if (res.status === 400) {
-        if (errorMsg.includes('credit balance') || errorMsg.includes('low balance')) {
-          throw new Error('💰 Insufficient credits for vision analysis. Add funds at https://console.anthropic.com/settings/billing');
-        }
-        if (errorMsg.includes('image') || errorMsg.includes('base64')) {
-          throw new Error('🖼️ Image format error. Please try a different image.');
-        }
-        throw new Error(`❌ ${errorMsg}`);
-      }
-      
-      throw new Error(`❌ ${errorMsg} (${res.status})`);
+      throw new Error(`❌ ${errorMsg}`);
     }
 
     const data = await res.json();
     return data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
   },
 
-  // ── Helper method to test your API key ─────────────────────────
+  // ── Helper method to test connection to the proxy ──────────────
   async testConnection() {
     try {
       const result = await this.chat([
-        { role: 'user', content: 'Say "API connection successful" if you receive this.' }
+        { role: 'user', content: 'Say "Proxy connection successful" if you receive this.' }
       ], { max_tokens: 20 });
       return { success: true, message: result };
     } catch (error) {
       return { success: false, error: error.message };
     }
   }
-
 };
 
 // ── 13. Toast (queued — toasts never overlap) ────────────────────
